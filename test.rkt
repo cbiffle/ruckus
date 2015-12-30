@@ -4,6 +4,15 @@
 (require (planet "rgl.rkt" ("stephanh" "RacketGL.plt" 1 4)))
 (require ffi/vector)
 (require "viewer.rkt")
+(require "edsl.rkt")
+
+(define (test-scene)
+  (intersection
+    (sphere 100)
+    (translate '[75 0 0] (cube 100))))
+
+(define (generate-shader-text)
+  (node->glsl (call-as-root test-scene)))
 
 (define (get-shader-parameter shader pname)
   (let ([v (s32vector 0)])
@@ -11,7 +20,11 @@
     (s32vector-ref v 0)))
 
 (define (load-program-source shader port)
-  (let* ((lines (for/vector ((line (in-lines port))) (string-append line "\n")))
+  (let* ([preamble (for/vector ([line (in-lines port)])
+                     (string-append line "\n"))]
+         [gen (for/vector ([line (in-list (generate-shader-text))])
+                (string-append line "\n"))]
+         [lines (vector-append preamble gen)]
          (sizes (for/list ((line (in-vector lines))) (string-length line)))
          (sizes (list->s32vector sizes)))
    (glShaderSource shader (vector-length lines) lines sizes)))
@@ -38,7 +51,7 @@
 (define (setup)
   (if (or (gl-version-at-least? '(2 0))
           (gl-has-extension? 'GL_ARB_shader_objects))
-    (set! program (call-with-input-file "test.glsl" load-program))
+    (set! program (call-with-input-file "preamble.glsl" load-program))
     (printf "This OpenGL does not support shaders, you'll get a plain white rectangle.~%")))
 
 (define (draw width height)
@@ -80,7 +93,5 @@
   (glDisableClientState GL_VERTEX_ARRAY)
   (when program
     (glUseProgram 0)))
-
-
 
 (view draw setup)

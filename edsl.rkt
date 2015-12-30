@@ -2,6 +2,15 @@
 
 (require racket/flonum)
 
+(provide
+  union
+  sphere
+  cube
+  translate
+  intersection
+  call-as-root
+  node->glsl)
+
 ; ------------------------------------------------------------------------
 ; Basic data types.
 
@@ -106,9 +115,6 @@
     (translate '[125 0 0] (cube 50))
     ))
 
-(println "User-level AST:")
-(pretty-write (call-as-root test-scene))
-
 
 ; ----------------------------------------------------------------------
 ; AST canonicalization.
@@ -192,16 +198,6 @@
                                                             children)))])])))
 
 
-; Empty union goes away.
-(canonicalize (node 'union '() '()))
-; Nested empty unions also go away.
-(canonicalize (node 'union '() (list (node 'union '() '()))))
-; Union containing a single element reduces.
-(canonicalize (node 'union '() (list (node 'sphere '(50) '()))))
-
-(println "Canonicalized AST:")
-(pretty-write (canonicalize (call-as-root test-scene)))
-
 ; ----------------------------------------------------------------------
 ; Lowering to GLSL pseudo-assembler.
 
@@ -261,12 +257,6 @@
     (let-values ([(r n) (generate (first (canonicalize node)) 0 1)])
       (values r (reverse (*statements*))))))
 
-(println "GLSL-level pseudo-assembler:")
-(let-values ([(r s) (generate-statements (call-as-root test-scene))])
-  (pretty-write s)
-  (println "result")
-  (println (number->string r)))
-
 ; ------------------------------------------------------------------------
 ; GLSL code generation.  Currently targeting GLSL 1.1 because I can't
 ; figure out how to switch Racket into 3.3-core.  (Requesting a non-legacy
@@ -313,6 +303,3 @@
             (list (string-append "return r" (number->string r) ";"))
             (list "}")
             )))
-
-(for ([line (node->glsl (call-as-root test-scene))])
-  (displayln line))
