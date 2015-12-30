@@ -1,5 +1,7 @@
 #lang racket
 
+(require racket/flonum)
+
 ; ------------------------------------------------------------------------
 ; Basic data types.
 
@@ -104,7 +106,8 @@
     (translate '[125 0 0] (cube 50))
     ))
 
-(call-as-root test-scene)
+(println "User-level AST:")
+(pretty-write (call-as-root test-scene))
 
 
 ; ----------------------------------------------------------------------
@@ -196,13 +199,16 @@
 ; Union containing a single element reduces.
 (canonicalize (node 'union '() (list (node 'sphere '(50) '()))))
 
+(println "Canonicalized AST:")
 (pretty-write (canonicalize (call-as-root test-scene)))
 
 ; ----------------------------------------------------------------------
 ; Lowering to GLSL pseudo-assembler.
 
+(define *statements* (make-parameter '()))
+
 (define (code form)
-  (pretty-write form))
+  (*statements* (cons form (*statements*))))
 
 (define (generate node query rn)
   (case (node-type node)
@@ -214,7 +220,7 @@
     [else     (error "unmatched node type in generate: " (node-type node))]))
 
 (define (generate-sphere node query rn)
-  (code `(assign ,rn (- (length (r ,query)) (c ,(car (node-atts node))))))
+  (code `(assigns ,rn (- (length (r ,query)) (cs ,(car (node-atts node))))))
   (values rn (+ rn 1)))
 
 (define (generate-union node query rn-initial)
@@ -224,7 +230,7 @@
   (let*-values ([(children) (node-children node)]
                 [(d1 rn1) (generate (first children) query rn-initial)]
                 [(d2 rn2) (generate (second children) query rn1)])
-    (code `(assign ,rn2 (min ,d1 ,d2)))
+    (code `(assigns ,rn2 (min (r ,d1) (r ,d2))))
     (values rn2 (+ rn2 1))))
 
 (define (generate-intersection node query rn-initial)
@@ -234,20 +240,72 @@
   (let*-values ([(children) (node-children node)]
                 [(d1 rn1) (generate (first children) query rn-initial)]
                 [(d2 rn2) (generate (second children) query rn1)])
-    (code `(assign ,rn2 (max ,d1 ,d2)))
+    (code `(assigns ,rn2 (max (r ,d1) (r ,d2))))
     (values rn2 (+ rn2 1))))
 
 (define (generate-translate node query rn)
   (unless (= 1 (length (node-children node)))
     (error "non-canonical translate passed to generate"))
 
-  (code `(assign ,rn (- (r ,query) (c ,(first (node-atts node))))))
+  (code `(assignv ,rn (- (r ,query) (cv ,(first (node-atts node))))))
   (generate (first (node-children node)) rn (+ rn 1)))
 
 (define (generate-half node query rn)
   (let ([normal (first (node-atts node))]
         [dist   (second (node-atts node))])
-    (code `(assign ,rn (- (dot (r ,query) (c ,normal)) (c ,dist))))
+    (code `(assigns ,rn (- (dot (r ,query) (cv ,normal)) (cs ,dist))))
     (values rn (+ rn 1))))
 
-(generate (first (canonicalize (call-as-root test-scene))) 0 1)
+(define (generate-statements node)
+  (parameterize ([*statements* '()])
+    (let-values ([(r n) (generate (first (canonicalize node)) 0 1)])
+      (values r (reverse (*statements*))))))
+
+(println "GLSL-level pseudo-assembler:")
+(let-values ([(r s) (generate-statements (call-as-root test-scene))])
+  (pretty-write s)
+  (println "result")
+  (println (number->string r)))
+
+; ------------------------------------------------------------------------
+; GLSL code generation.  Currently targeting GLSL 1.1 because I can't
+; figure out how to switch Racket into 3.3-core.  (Requesting a non-legacy
+; GL context crashes.)
+
+(define (wrap str)
+  (string-append "(" str ")"))
+
+(define (fn name . args)
+  (string-append name "(" (string-join args ", ") ")"))
+
+(define (vec3 x y z)
+  (apply fn "vec3" (map number->string (map ->fl (list x y z)))))
+
+(define (bin op a b)
+  (string-append (wrap a) " " op " " (wrap b)))
+
+(define (decl t r v)
+  (string-append t " r" (number->string r) " = " (glsl-expr v) ";"))
+
+; Generates a GLSL expression from an expression-level intermediate.
+(define (glsl-expr form)
+  (match form
+    [(list '- a b) (bin "-" (glsl-expr a) (glsl-expr b))]
+    [(list 'r n) (string-append "r" (number->string n))]
+    [(list 'cv (list x y z)) (vec3 x y z)]
+    [(list 'cs x) (number->string (->fl x))]
+    [(list 'length v) (fn "length" (glsl-expr v))]
+    [(list 'dot a b) (fn "dot" (glsl-expr a) (glsl-expr b))]
+    [(list 'max a b) (fn "max" (glsl-expr a) (glsl-expr b))]
+    [(list 'min a b) (fn "min" (glsl-expr a) (glsl-expr b))]
+    [_ (error "bad expression passed to glsl-expr: " form)]))
+
+(define (glsl-stmt form)
+  (match form
+    [(list 'assigns r v) (decl "float" r v)]
+    [(list 'assignv r v) (decl "vec3" r v)]
+    [_ (error "bad statement passed to glsl-stmt: " form)]))
+
+(let-values ([(r s) (generate-statements (call-as-root test-scene))])
+  (pretty-write (map glsl-stmt s))
+  (println (string-append "return r" (number->string r))))

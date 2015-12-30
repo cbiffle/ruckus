@@ -40,15 +40,7 @@ float cube(vec3 center, float size, vec3 pRaw) {
 }
 
 
-float distanceField(vec3 pos) {
-  float a = sphere(vec3(0,0,0), 100, pos);
-
-  float b = sphere(vec3(0,150,0), 50, pos);
-
-  float c = cube(vec3(125, 0, 0), 50, pos);
-
-  return min(a, min(b, c));
-}
+float distanceField(vec3 r0);
 
 vec3 distanceFieldNormal(vec3 pos) {
   // Computes the distance field gradient using the method of central
@@ -111,3 +103,26 @@ void main() {
 
   gl_FragColor = color; // complexity;
 }
+
+float distanceField(vec3 r0) {
+  float r1 = (length(r0)) - (100.0);
+  vec3 r2 = (r0) - (vec3(0.0, 150.0, 0.0));
+  float r3 = (length(r2)) - (50.0);
+  vec3 r4 = (r0) - (vec3(100.0, -25.0, -25.0));
+  float r5 = (dot(r4, vec3(-1.0, 0.0, 0.0))) - (0.0);
+  float r6 = (dot(r4, vec3(1.0, 0.0, 0.0))) - (50.0);
+  float r7 = (dot(r4, vec3(0.0, -1.0, 0.0))) - (0.0);
+  float r8 = (dot(r4, vec3(0.0, 1.0, 0.0))) - (50.0);
+  float r9 = (dot(r4, vec3(0.0, 0.0, -1.0))) - (0.0);
+  float r10 = (dot(r4, vec3(0.0, 0.0, 1.0))) - (50.0);
+  float r11 = max(r9, r10);
+  float r12 = max(r8, r11);
+  float r13 = max(r7, r12);
+  float r14 = max(r6, r13);
+  float r15 = max(r5, r14);
+  float r16 = min(r3, r15);
+  float r17 = min(r1, r16);
+  return r17;
+}
+
+

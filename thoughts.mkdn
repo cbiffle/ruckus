@@ -1,3 +1,34 @@
+Design Language
+===============
+
+I imagine this time I'll be using some s-expr language.  Should it be Racket, or
+a language implemented in Racket?
+
+Having it *be* Racket simplifies things considerably, but it does mean I need to
+figure out how to record and model side effects.
+
+Example.
+
+    (define (my-sphere) (sphere 50))
+    (define (spheres) (for ([i 5]) (translate [50 0 0] (my-sphere))))
+
+Good: we were able to reuse `define` and `for` without rewriting them!
+
+Bad: So what exactly are `translate` and `sphere` doing?  They are
+side-effecting, clearly.
+
+Should modules (functions) return their geometry, or yield it on the side?
+
+Should modules be separate from functions?  I suspect, without evidence, that
+placing repeated code in GLSL functions may give the compiler an opportunity to
+improve density... should I use module boundaries for this or attempt to
+discover repetition automatically?
+
+
+
+
+Distance Field Implementation
+=============================
 
 Position and orientation of objects can be represented by a translation and a
 quaternion, probably more cheaply than using a general 4x4 matrix, but this
@@ -11,13 +42,78 @@ object *needs* a shear transform, then we can use a matrix.  If not, use a
 simple center/orientation pair.
 
 
-How to do extrusion?  Should 2D shapes have infinite Z-axis extent?
+On Translation
+--------------
 
-How to spin outlines?  If the outline has infinite extent on one axis, rotating
-it with intersection along a perpendicular axis should do.
+OpenSCAD translates groups of objects.  Translations can be nested.  It's very
+similar to the old OpenGL matrix model.
 
-Can I produce an infinitely smooth spun shape?  That would require folding all
-query points in a circle around the spin axis into a single real point, which
-seems doable.
+But in practice it seems unusual -- but not impossible -- for objects to share
+the same exact translation vector.  So it probably makes sense for each
+primitive to contain a translation vector.
+
+Except from a DRY perspective.  Having primitives wrapped in translate nodes
+factors the translation behavior out and probably makes things easier.
+
+Note that some primitives are implicitly translated already.  I'm thinking of
+plane-defined half-spaces, which are likely closed under affine transformations.
+(I'm actually pretty confident that they *are* closed, but I haven't done the
+math yet.)
+
+Any sequence of stacked translations *not separated by another type of
+transformation, such as a rotation* can be combined.  Flattened.  In the
+extreme, they get flattened into the primitive.
+
+Hmmm.  Exception.  Modules.  If a module is instanced in several locations,
+it would improve code reuse to use the same translation constants in each
+instance.  This would mean *not* flattening translations.
+
+At least across module boundaries?
+
+Perhaps modules are the unit of instancing, and we disable propagation of some
+state across module boundaries so that module code is guaranteed generated once.
+
+
+
+
+
+Specific Tricks
+===============
+
+Extrusion
+---------
+
+Extrusion of a 2D shape into a 3D solid is simple if 2D shapes have infinite
+extent along one axis.  (e.g. a "square" is really an infinite rectangular
+solid.)
+
+So a 2D shape is already extruded, in a simple fashion, along one axis.  It can
+be intersected with halfspaces to produce a bounded 3D solid.
+
+
+Spin
+----
+
+Taking a 2D profile or half-profile and producing a radially symmetric 3D
+object, as on a lathe.
+
+There are two ways I can think of.
+
+1. To produce a stepped spin (e.g. a hexagonal profile), instance the outline
+   several times, rotated, and intersect the results.
+
+2. To produce a perfectly smooth spin, we need a polar-to-cartesian transform on
+   the query rays, to flatten any point at distance D from the spin axis into a
+   query at X coordinate D.
+
+
+Twist
+-----
+
+A coordinate-dependent transform: rotate the query ray around an axis
+proportional to its dot product with that axis.  (If the axis is one of the
+bases, then sampling one component of the query ray suffices.)
+
+
 
 
