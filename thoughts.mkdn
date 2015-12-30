@@ -1,0 +1,23 @@
+
+Position and orientation of objects can be represented by a translation and a
+quaternion, probably more cheaply than using a general 4x4 matrix, but this
+would eliminate shear transforms.
+
+Other forms of query ray alteration, such as twists, aren't expressible in a
+matrix.
+
+Basically it seems like doing as little work as possible makes sense.  If an
+object *needs* a shear transform, then we can use a matrix.  If not, use a
+simple center/orientation pair.
+
+
+How to do extrusion?  Should 2D shapes have infinite Z-axis extent?
+
+How to spin outlines?  If the outline has infinite extent on one axis, rotating
+it with intersection along a perpendicular axis should do.
+
+Can I produce an infinitely smooth spun shape?  That would require folding all
+query points in a circle around the spin axis into a single real point, which
+seems doable.
+
+
