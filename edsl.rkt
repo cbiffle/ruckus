@@ -306,6 +306,13 @@
     [(list 'assignv r v) (decl "vec3" r v)]
     [_ (error "bad statement passed to glsl-stmt: " form)]))
 
-(let-values ([(r s) (generate-statements (call-as-root test-scene))])
-  (pretty-write (map glsl-stmt s))
-  (println (string-append "return r" (number->string r))))
+(define (node->glsl n)
+  (let-values ([(r s) (generate-statements n)])
+    (append (list "float distanceField(vec3 r0) {")
+            (map glsl-stmt s)
+            (list (string-append "return r" (number->string r) ";"))
+            (list "}")
+            )))
+
+(for ([line (node->glsl (call-as-root test-scene))])
+  (displayln line))
