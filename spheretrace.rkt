@@ -7,13 +7,12 @@
 (require "edsl.rkt")
 (require "compiler.rkt")
 
-(define (test-scene)
-  (intersection
-    (sphere 100)
-    (translate '[75 0 0] (cube 100))))
+(provide spheretrace)
 
-(define (generate-shader-text)
-  (node->glsl (call-with-edsl-root test-scene)))
+(define distance-field-source #f)
+
+(define (generate-shader-text gen)
+  (set! distance-field-source (node->glsl (call-with-edsl-root gen))))
 
 (define (get-shader-parameter shader pname)
   (let ([v (s32vector 0)])
@@ -23,7 +22,7 @@
 (define (load-program-source shader port)
   (let* ([preamble (for/vector ([line (in-lines port)])
                      (string-append line "\n"))]
-         [gen (for/vector ([line (in-list (generate-shader-text))])
+         [gen (for/vector ([line (in-list distance-field-source)])
                 (string-append line "\n"))]
          [lines (vector-append preamble gen)]
          (sizes (for/list ((line (in-vector lines))) (string-length line)))
@@ -95,4 +94,6 @@
   (when program
     (glUseProgram 0)))
 
-(view draw setup)
+(define (spheretrace gen)
+  (generate-shader-text gen)
+  (view draw setup))
