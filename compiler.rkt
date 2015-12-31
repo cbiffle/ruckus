@@ -22,6 +22,8 @@
       [(root) (canon-root n)]
       [(union) (canon-union n)]
       [(intersection) (canon-intersection n)]
+      [(difference) (canon-difference n)]
+      [(inverse) (canon-inverse n)]
       [(translate) (canon-translate n)]
       [(rotate) (canon-rotate n)]
       [(sphere half) (list n)]
@@ -63,6 +65,32 @@
                                              (node 'intersection
                                                    '()
                                                    (rest children))))]))])))
+
+; Difference nodes get rewritten into intersections with inverse volumes.
+(define (canon-difference n)
+  (define (make-inverse n)
+    (node 'inverse '() (list n)))
+
+  (let ([children (node-children n)])
+    (canonicalize
+      (node 'intersection '()
+            (apply list (first children) (map make-inverse (rest children)))))))
+
+; A canonical inverse has a single child.  Inverses of more than one child are
+; assumed to be unions of the children and rewritten thus.
+;
+; Immediately nested inversions cancel.
+(define (canon-inverse n)
+  (let ([children (node-children n)])
+    (case (length children)
+      [(0) '()]
+      [(1) (case (node-type (first children))
+             [(inverse) (node-children (first children))]
+             [else (list n)])]
+      [else (struct-copy node n
+                         [children (list (canon-union (node 'union
+                                                            '()
+                                                            children)))])])))
 
 ; A canonical translate has a single child.  Translations of more than one
 ; child are assumed to be unions of the children and rewritten thus.
@@ -125,6 +153,7 @@
     [(half)   (generate-half node query rn)]
     [(union root)  (generate-union node query rn)]
     [(intersection)  (generate-intersection node query rn)]
+    [(inverse) (generate-inverse node query rn)]
     [(translate)  (generate-translate node query rn)]
     [(rotate)  (generate-rotate node query rn)]
     [else     (error "unmatched node type in generate: " (node-type node))]))
@@ -152,6 +181,15 @@
                 [(d2 rn2) (generate (second children) query rn1)])
     (code `(assigns ,rn2 (max (r ,d1) (r ,d2))))
     (values rn2 (+ rn2 1))))
+
+(define (generate-inverse node query rn-initial)
+  (unless (= 1 (length (node-children node)))
+    (error "non-canonical inverse passed to generate"))
+
+  (let*-values ([(children) (node-children node)]
+                [(d rn) (generate (first children) query rn-initial)])
+    (code `(assigns ,rn (- (cs 0) (r ,d))))
+    (values rn (+ rn 1))))
 
 (define (generate-translate node query rn)
   (unless (= 1 (length (node-children node)))

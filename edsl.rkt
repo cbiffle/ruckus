@@ -7,6 +7,7 @@
 (provide
   union
   intersection
+  difference
   translate
   rotate
 
@@ -76,6 +77,14 @@
 
 (define-syntax-rule (intersection b bs ...)
   (call-as-intersection (lambda () b bs ...)))
+
+(define (call-as-difference body)
+  (begin-child 'difference)
+  (body)
+  (end-child))
+
+(define-syntax-rule (difference b bs ...)
+  (call-as-difference (lambda () b bs ...)))
 
 (define (call-with-translation v body)
   (begin-child 'translate v)  ; TODO use vec3
