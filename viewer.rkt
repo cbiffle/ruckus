@@ -31,6 +31,8 @@
     (define orientation (quat-identity-rotation))
     (define active-rotation (quat-identity-rotation))
     (define zoom 1)
+    (define quality 5)
+    (define step-limit 50)
 
     (define/override (on-size width height)
       (with-gl-context
@@ -57,7 +59,11 @@
           (glPushMatrix)
           (let ([width (send this get-width)]
                 [height (send this get-height)])
-            (draw width height (quat-mul orientation active-rotation)))
+            (draw width
+                  height
+                  (quat-mul orientation active-rotation)
+                  quality
+                  step-limit))
           (glPopMatrix)
           (swap-gl-buffers)
           ))
@@ -89,6 +95,22 @@
       (case (send event get-key-code)
         ((#\+) (set! zoom (* zoom 4/3)) (refresh))
         ((#\-) (set! zoom (/ zoom 4/3)) (refresh))
+        ((#\[)
+         (set! quality (max 1 (- quality 1)))
+         (printf "quality now 1/~a~n" quality)
+         (refresh))
+        ((#\])
+         (set! quality (+ quality 1))
+         (printf "quality now 1/~a~n" quality)
+         (refresh))
+        ((#\{)
+         (set! step-limit (max 1 (- step-limit 1)))
+         (printf "step-limit now ~a~n" step-limit)
+         (refresh))
+        ((#\})
+         (set! step-limit (+ step-limit 1))
+         (printf "step-limit now ~a~n" step-limit)
+         (refresh))
         ((wheel-up) (set! zoom (* zoom 9/8)) (refresh))
         ((wheel-down) (set! zoom (/ zoom 9/8)) (refresh))))
   ))

@@ -57,7 +57,7 @@
     (set! program (call-with-input-file "preamble.glsl" load-program))
     (printf "This OpenGL does not support shaders, you'll get a plain white rectangle.~%")))
 
-(define (draw width height orientation)
+(define (draw width height orientation quality step-limit)
   ; the coordinates
   (define vertex-array
     (f64vector 0.0 0.0
@@ -74,8 +74,16 @@
 
   (when program
     (glUseProgram program)
+
+    (let ([ceU (glGetUniformLocation program "closeEnough")])
+      (glUniform1f ceU (real->double-flonum (/ 1 quality))))
+
+    (let ([slU (glGetUniformLocation program "stepLimit")])
+      (glUniform1i slU step-limit))
+
     (let ([resU (glGetUniformLocation program "resolution")])
       (glUniform2f resU (->fl width) (->fl height))))
+
     (let ([orientU (glGetUniformLocation program "orientation")]
           [qv (quat-v (quat-conjugate orientation))])
       (glUniform4f orientU

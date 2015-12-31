@@ -1,6 +1,4 @@
 const float PI = 3.14159265358979323846;
-const int QUAL = 50;
-const float EPSILON = 0.5;
 const float ISOSURFACE = 0.0;
 const vec3 LIGHT = vec3(0, 0, 100);
 
@@ -17,6 +15,8 @@ const vec3 MAT_COLOR = vec3(1, 0.8, 0.3);
 
 uniform vec2 resolution;
 uniform vec4 orientation;
+uniform float closeEnough;
+uniform int stepLimit;
 
 //////////////////////////////////////////////////////////////
 // Quaternion support.  Note that quaternions are represented
@@ -38,14 +38,13 @@ vec3 qrot(vec4 q, vec3 v) {
   return qmul(qmul(q, vec4(v, 0)), qconj(q)).xyz;
 }
 
-
 float distanceField(vec3 r0);
 
 vec3 distanceFieldNormal(vec3 pos) {
   // Computes the distance field gradient using the method of central
   // differences, which also happens to approximate the normal of a
   // nearby surface.
-  const float h = EPSILON;
+  const float h = 0.5;
 
   vec3 g = vec3(
     distanceField(pos + vec3(h, 0, 0)) - distanceField(pos - vec3(h, 0, 0)),
@@ -73,7 +72,7 @@ void main() {
   vec3 rLight = qrot(orientation, LIGHT);
 
   int stepsTaken = 0;
-  for (int steps = 0; steps < QUAL; ++steps) {
+  for (int steps = 0; steps < stepLimit; ++steps) {
     stepsTaken = steps;
 
     if (pos.z < far) break;
@@ -81,7 +80,7 @@ void main() {
     vec3 tpos = qrot(orientation, pos);
     
     float d = distanceField(tpos) - ISOSURFACE;
-    if (d < EPSILON) {
+    if (d <= closeEnough) {
       // Hit!
       vec3 normal = distanceFieldNormal(tpos);
       vec3 nl_m = normalize(rLight);
