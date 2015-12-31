@@ -2,7 +2,7 @@ const float PI = 3.14159265358979323846;
 const int QUAL = 50;
 const float EPSILON = 0.5;
 const float ISOSURFACE = 0.0;
-const vec3 LIGHT = vec3(0, 0, -1);
+const vec3 LIGHT = vec3(0, 0, 100);
 
 const float i_a = 0.3;
 const float i_d = 0.6;
@@ -57,10 +57,10 @@ vec3 distanceFieldNormal(vec3 pos) {
 }
 
 void main() {
-  float near = -resolution.x * 1.2 / 2.;
-  float far  =  resolution.x * 1.2 / 2.;
+  float near =  resolution.x * 1.2 / 2.;
+  float far  = -resolution.x * 1.2 / 2.;
 
-  vec3 cameraPosition = vec3(0, 0, -20);
+  vec3 cameraPosition = vec3(0, 0, 20);
 
   vec3 pos = vec3(gl_FragCoord.xy - resolution.xy / 2., near);
   vec3 npos = pos / resolution.x;
@@ -76,7 +76,7 @@ void main() {
   for (int steps = 0; steps < QUAL; ++steps) {
     stepsTaken = steps;
 
-    if (pos.z > far) break;
+    if (pos.z < far) break;
 
     vec3 tpos = qrot(orientation, pos);
     
