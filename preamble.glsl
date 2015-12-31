@@ -17,6 +17,27 @@ const vec3 MAT_COLOR = vec3(1, 0.8, 0.3);
 
 uniform vec2 resolution;
 
+//////////////////////////////////////////////////////////////
+// Quaternion support.  Note that quaternions are represented
+// with the vector portion in xyz and the scalar in w.
+
+// Conjugate.
+vec4 qconj(vec4 q) {
+  return vec4(-q.xyz, q.w);
+}
+
+// Quaternion multiplication.
+vec4 qmul(vec4 p, vec4 q) {
+  return vec4(p.w * q.xyz + q.w * p.xyz + cross(p.xyz, q.xyz),
+              p.w * q.w - dot(p.xyz, q.xyz));
+}
+
+// Rotate vector by quaternion, giving new vector.
+vec3 qrot(vec4 q, vec3 v) {
+  return qmul(qmul(q, vec4(v, 0)), qconj(q)).xyz;
+}
+
+
 float distanceField(vec3 r0);
 
 vec3 distanceFieldNormal(vec3 pos) {

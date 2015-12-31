@@ -2,15 +2,19 @@
 
 (require racket/flonum)
 (require "model.rkt")
+(require "math.rkt")
 
 (provide
   union
+  intersection
+  translate
+  rotate
+
   sphere
   cube
   half-space
   rects
-  translate
-  intersection
+
   call-with-edsl-root)
 
 ; ------------------------------------------------------------------------
@@ -74,12 +78,22 @@
   (call-as-intersection (lambda () b bs ...)))
 
 (define (call-with-translation v body)
-  (begin-child 'translate v)
+  (begin-child 'translate v)  ; TODO use vec3
   (body)
   (end-child))
 
 (define-syntax-rule (translate v b bs ...)
   (call-with-translation v (lambda () b bs ...)))
+
+(define (call-with-rotation axis angle body)
+  (begin-child 'rotate
+               (quat-rotation-around (vec3-normalize (apply vec3 axis))
+                                     (degrees->radians angle)))
+  (body)
+  (end-child))
+
+(define-syntax-rule (rotate axis angle b bs ...)
+  (call-with-rotation axis angle (lambda () b bs ...)))
 
 ; ------------------------------------------------------------------------
 ; Primitives and basic derived shapes.

@@ -2,6 +2,7 @@
 
 (require racket/flonum)
 (require "model.rkt")
+(require "math.rkt")
 
 (provide
   node->glsl)
@@ -22,6 +23,7 @@
       [(union) (canon-union n)]
       [(intersection) (canon-intersection n)]
       [(translate) (canon-translate n)]
+      [(rotate) (canon-rotate n)]
       [(sphere half) (list n)]
       [else (error "unknown node type in canonicalize: " (node-type n))])))
 
@@ -87,6 +89,27 @@
                                                             '()
                                                             children)))])])))
 
+; A canonical rotate has a single child.  Rotations of more than one child are
+; assumed to be unions of the children and rewritten thus.
+;
+; Immediately nested rotations are combined through quaternion multiplication.
+(define (canon-rotate n)
+  (define (combine n1 n2)
+    (let ([q1 (first (node-atts n1))]
+          [q2 (first (node-atts n2))])
+      (struct-copy node n2 [atts (list (quat-mul q1 q2))])))
+
+  (let ([children (node-children n)])
+    (case (length children)
+      [(0) '()]
+      [(1) (case (node-type (first children))
+             [(rotate) (list (combine n (first children)))]
+             [else (list n)])]
+      [else (struct-copy node n
+                         [children (list (canon-union (node 'union
+                                                            '()
+                                                            children)))])])))
+
 
 ; ----------------------------------------------------------------------
 ; Lowering to GLSL pseudo-assembler.
@@ -103,6 +126,7 @@
     [(union root)  (generate-union node query rn)]
     [(intersection)  (generate-intersection node query rn)]
     [(translate)  (generate-translate node query rn)]
+    [(rotate)  (generate-rotate node query rn)]
     [else     (error "unmatched node type in generate: " (node-type node))]))
 
 (define (generate-sphere node query rn)
@@ -136,6 +160,13 @@
   (code `(assignv ,rn (- (r ,query) (cv ,(first (node-atts node))))))
   (generate (first (node-children node)) rn (+ rn 1)))
 
+(define (generate-rotate node query rn)
+  (unless (= 1 (length (node-children node)))
+    (error "non-canonical rotate passed to generate"))
+
+  (code `(assignv ,rn (qrot (cq ,(first (node-atts node))) (r ,query))))
+  (generate (first (node-children node)) rn (+ rn 1)))
+
 (define (generate-half node query rn)
   (let ([normal (first (node-atts node))]
         [dist   (second (node-atts node))])
@@ -158,8 +189,13 @@
 (define (fn name . args)
   (string-append name "(" (string-join args ", ") ")"))
 
-(define (vec3 x y z)
+(define (glsl-vec3 x y z)
   (apply fn "vec3" (map number->string (map ->fl (list x y z)))))
+
+(define/match (glsl-quat q)
+  [((quat s (vec3 x y z)))
+   (apply fn "vec4"
+          (map number->string (map real->double-flonum (list x y z s))))])
 
 (define (bin op a b)
   (string-append (wrap a) " " op " " (wrap b)))
@@ -172,12 +208,14 @@
   (match form
     [(list '- a b) (bin "-" (glsl-expr a) (glsl-expr b))]
     [(list 'r n) (string-append "r" (number->string n))]
-    [(list 'cv (list x y z)) (vec3 x y z)]
+    [(list 'cv (list x y z)) (glsl-vec3 x y z)]
+    [(list 'cq q) (glsl-quat q)]
     [(list 'cs x) (number->string (->fl x))]
     [(list 'length v) (fn "length" (glsl-expr v))]
     [(list 'dot a b) (fn "dot" (glsl-expr a) (glsl-expr b))]
     [(list 'max a b) (fn "max" (glsl-expr a) (glsl-expr b))]
     [(list 'min a b) (fn "min" (glsl-expr a) (glsl-expr b))]
+    [(list 'qrot q v) (fn "qrot" (glsl-expr q) (glsl-expr v))]
     [_ (error "bad expression passed to glsl-expr: " form)]))
 
 (define (glsl-stmt form)
