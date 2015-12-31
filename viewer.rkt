@@ -33,6 +33,8 @@
     (define zoom 1)
     (define quality 5)
     (define step-limit 50)
+    (define modes '(#f))
+    (define remaining-modes '(#f))
 
     (define/override (on-size width height)
       (with-gl-context
@@ -51,7 +53,8 @@
       (with-gl-context               
         (lambda ()
           (unless setup-called
-            (setup)
+            (set! modes (setup))
+            (set! remaining-modes modes)
             (set! setup-called #t))
           (send this get-width)
           (glClearColor 0.0 0.0 0.3 0.0) ; darkish blue
@@ -63,7 +66,8 @@
                   height
                   (quat-mul orientation active-rotation)
                   quality
-                  step-limit))
+                  step-limit
+                  (first remaining-modes)))
           (glPopMatrix)
           (swap-gl-buffers)
           ))
@@ -110,6 +114,12 @@
         ((#\})
          (set! step-limit (+ step-limit 1))
          (printf "step-limit now ~a~n" step-limit)
+         (refresh))
+        ((#\ )
+         (set! remaining-modes (rest remaining-modes))
+         (when (empty? remaining-modes)
+           (set! remaining-modes modes))
+         (printf "mode now ~a~n" (first remaining-modes))
          (refresh))
         ((wheel-up) (set! zoom (* zoom 9/8)) (refresh))
         ((wheel-down) (set! zoom (/ zoom 9/8)) (refresh))))

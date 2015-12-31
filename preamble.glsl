@@ -17,6 +17,7 @@ uniform vec2 resolution;
 uniform vec4 orientation;
 uniform float closeEnough;
 uniform int stepLimit;
+uniform bool showComplexity;
 
 //////////////////////////////////////////////////////////////
 // Quaternion support.  Note that quaternions are represented
@@ -44,7 +45,7 @@ vec3 distanceFieldNormal(vec3 pos) {
   // Computes the distance field gradient using the method of central
   // differences, which also happens to approximate the normal of a
   // nearby surface.
-  const float h = 0.5;
+  float h = closeEnough / 2.;
 
   vec3 g = vec3(
     distanceField(pos + vec3(h, 0, 0)) - distanceField(pos - vec3(h, 0, 0)),
@@ -98,11 +99,8 @@ void main() {
     }
   }
 
-  vec4 complexity = vec4(sin(float(stepsTaken - 8) / 8.),
-                         sin(float(stepsTaken) / 8.),
-                         sin(clamp(float(stepsTaken) / 4. + PI/2., PI/2., PI)),
-                         1);
+  vec4 complexity = vec4(float(stepsTaken) / float(stepLimit));
 
-  gl_FragColor = color; // complexity;
+  gl_FragColor = showComplexity ? complexity : color;
 }
 
