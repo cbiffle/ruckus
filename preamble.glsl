@@ -2,7 +2,6 @@ const float PI = 3.14159265358979323846;
 const int QUAL = 50;
 const float EPSILON = 0.5;
 const float ISOSURFACE = 0.0;
-const float RADIUS = 100.0;
 const vec3 LIGHT = vec3(0, 0, -1);
 
 const float i_a = 0.3;
@@ -17,28 +16,6 @@ const float alpha = 8.;
 const vec3 MAT_COLOR = vec3(1, 0.8, 0.3);
 
 uniform vec2 resolution;
-
-float sphere(vec3 center, float radius, vec3 p) {
-  return length(p - center) - radius;
-}
-
-float halfspace(vec3 n, float d, vec3 p) {
-  return dot(p, n) - d;
-}
-
-float cube(vec3 center, float size, vec3 pRaw) {
-  vec3 p = pRaw - center;
-  float h = size / 2.;
-  float a = halfspace(vec3(+1, 0, 0), h, p);
-  float b = halfspace(vec3(-1, 0, 0), h, p);
-  float c = halfspace(vec3(0, +1, 0), h, p);
-  float d = halfspace(vec3(0, -1, 0), h, p);
-  float e = halfspace(vec3(0, 0, +1), h, p);
-  float f = halfspace(vec3(0, 0, -1), h, p);
-
-  return max(a, max(b, max(c, max(d, max(e, f)))));
-}
-
 
 float distanceField(vec3 r0);
 
