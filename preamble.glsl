@@ -38,7 +38,7 @@ void main() {
   float near = -resolution.x * 1.2 / 2.;
   float far  =  resolution.x * 1.2 / 2.;
 
-  vec3 cameraPosition = vec3(0, 0, -2);
+  vec3 cameraPosition = vec3(0, 0, -20);
 
   vec3 pos = vec3(gl_FragCoord.xy - resolution.xy / 2., near);
   vec3 npos = pos / resolution.x;
