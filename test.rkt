@@ -5,6 +5,7 @@
 (require ffi/vector)
 (require "viewer.rkt")
 (require "edsl.rkt")
+(require "compiler.rkt")
 
 (define (test-scene)
   (intersection
@@ -12,7 +13,7 @@
     (translate '[75 0 0] (cube 100))))
 
 (define (generate-shader-text)
-  (node->glsl (call-as-root test-scene)))
+  (node->glsl (call-with-edsl-root test-scene)))
 
 (define (get-shader-parameter shader pname)
   (let ([v (s32vector 0)])

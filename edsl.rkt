@@ -1,20 +1,17 @@
 #lang racket
 
 (require racket/flonum)
+(require "model.rkt")
 
 (provide
   union
   sphere
   cube
+  half-space
+  rects
   translate
   intersection
-  call-as-root
-  node->glsl)
-
-; ------------------------------------------------------------------------
-; Basic data types.
-
-(struct node (type atts children) #:transparent)
+  call-with-edsl-root)
 
 ; ------------------------------------------------------------------------
 ; The node stack used during EDSL interpretation and initial AST building.
@@ -28,7 +25,6 @@
          [parent2 (struct-copy node parent
                                [children (cons c (node-children parent))])])
     (*stack* (cons parent2 (rest s)))))
-
 
 (define (begin-child type . atts)
   (*stack* (cons (node type atts '())
@@ -53,7 +49,7 @@
   (apply begin-child type atts)
   (end-child))
 
-(define (call-as-root body)
+(define (call-with-edsl-root body)
   (begin-child 'root)
   (body)
   (end-root))
@@ -107,199 +103,3 @@
   (let ([shift (- (/ s 2))])
     (translate (list shift shift shift)
                (rects s s s))))
-
-(define (test-scene)
-  (union
-    (sphere 100)
-    (translate '[0 150 0] (sphere 50))
-    (translate '[125 0 0] (cube 50))
-    ))
-
-
-; ----------------------------------------------------------------------
-; AST canonicalization.
-
-(define (canonicalize n)
-  (define (canonical-children n)
-    (reverse
-      (for/fold ([cc '()])
-                ([c (node-children n)])
-        (append (canonicalize c) cc))))
-
-  (let ([n (struct-copy node n [children (canonical-children n)])])
-    (case (node-type n)
-      [(root) (canon-root n)]
-      [(union) (canon-union n)]
-      [(intersection) (canon-intersection n)]
-      [(translate) (canon-translate n)]
-      [(sphere half) (list n)]
-      [else (error "unknown node type in canonicalize: " (node-type n))])))
-
-; The root node is rewritten into an implicit union, and is not seen beyond
-; this point.
-(define (canon-root n)
-  (canon-union (struct-copy node n [type 'union])))
-
-; A canonical union node has exactly two children.  Unions of more than two
-; children are rewritten into binary trees.
-(define (canon-union n)
-  (let ([children (node-children n)])
-    (case (length children)
-      [(0) '()]
-      [(1) children]
-      [(2) (list n)]
-      [else (list
-              (struct-copy node n
-                           [children (cons (first children)
-                                           (canon-union
-                                             (node 'union
-                                                   '()
-                                                   (rest children))))]))])))
-
-; A canonical intersection node has exactly two children.  Intersections of
-; more than two children are rewritten into binary trees.
-(define (canon-intersection n)
-  (let ([children (node-children n)])
-    (case (length children)
-      [(0) '()]
-      [(1) children]  ; TODO: or empty?
-      [(2) (list n)]
-      [else (list
-              (struct-copy node n
-                           [children (cons (first children)
-                                           (canon-intersection
-                                             (node 'intersection
-                                                   '()
-                                                   (rest children))))]))])))
-
-; A canonical translate has a single child.  Translations of more than one
-; child are assumed to be unions of the children and rewritten thus.
-;
-; Immediately nested translations are flattened by adding their vectors.
-;
-; Useless translates (translations by zero) are eliminated.
-(define (canon-translate n)
-  (define (combine n1 n2)
-    (let ([v1 (first (node-atts n1))]
-          [v2 (first (node-atts n2))])
-      (struct-copy node n2 [atts (list (map + v1 v2))])))
-
-  (let ([children (node-children n)])
-    (case (length children)
-      [(0) '()]
-      [(1) (case (node-type (first children))
-             [(translate) (list (combine n (first children)))]
-             [else (if (equal? '(0 0 0) (first (node-atts n)))
-                     (list (first children))
-                     (list n))])]
-      [else (struct-copy node n
-                         [children (list (canon-union (node 'union
-                                                            '()
-                                                            children)))])])))
-
-
-; ----------------------------------------------------------------------
-; Lowering to GLSL pseudo-assembler.
-
-(define *statements* (make-parameter '()))
-
-(define (code form)
-  (*statements* (cons form (*statements*))))
-
-(define (generate node query rn)
-  (case (node-type node)
-    [(sphere) (generate-sphere node query rn)]
-    [(half)   (generate-half node query rn)]
-    [(union root)  (generate-union node query rn)]
-    [(intersection)  (generate-intersection node query rn)]
-    [(translate)  (generate-translate node query rn)]
-    [else     (error "unmatched node type in generate: " (node-type node))]))
-
-(define (generate-sphere node query rn)
-  (code `(assigns ,rn (- (length (r ,query)) (cs ,(car (node-atts node))))))
-  (values rn (+ rn 1)))
-
-(define (generate-union node query rn-initial)
-  (unless (= 2 (length (node-children node)))
-    (error "non-canonical union passed to generate"))
-
-  (let*-values ([(children) (node-children node)]
-                [(d1 rn1) (generate (first children) query rn-initial)]
-                [(d2 rn2) (generate (second children) query rn1)])
-    (code `(assigns ,rn2 (min (r ,d1) (r ,d2))))
-    (values rn2 (+ rn2 1))))
-
-(define (generate-intersection node query rn-initial)
-  (unless (= 2 (length (node-children node)))
-    (error "non-canonical intersection passed to generate"))
-
-  (let*-values ([(children) (node-children node)]
-                [(d1 rn1) (generate (first children) query rn-initial)]
-                [(d2 rn2) (generate (second children) query rn1)])
-    (code `(assigns ,rn2 (max (r ,d1) (r ,d2))))
-    (values rn2 (+ rn2 1))))
-
-(define (generate-translate node query rn)
-  (unless (= 1 (length (node-children node)))
-    (error "non-canonical translate passed to generate"))
-
-  (code `(assignv ,rn (- (r ,query) (cv ,(first (node-atts node))))))
-  (generate (first (node-children node)) rn (+ rn 1)))
-
-(define (generate-half node query rn)
-  (let ([normal (first (node-atts node))]
-        [dist   (second (node-atts node))])
-    (code `(assigns ,rn (- (dot (r ,query) (cv ,normal)) (cs ,dist))))
-    (values rn (+ rn 1))))
-
-(define (generate-statements node)
-  (parameterize ([*statements* '()])
-    (let-values ([(r n) (generate (first (canonicalize node)) 0 1)])
-      (values r (reverse (*statements*))))))
-
-; ------------------------------------------------------------------------
-; GLSL code generation.  Currently targeting GLSL 1.1 because I can't
-; figure out how to switch Racket into 3.3-core.  (Requesting a non-legacy
-; GL context crashes.)
-
-(define (wrap str)
-  (string-append "(" str ")"))
-
-(define (fn name . args)
-  (string-append name "(" (string-join args ", ") ")"))
-
-(define (vec3 x y z)
-  (apply fn "vec3" (map number->string (map ->fl (list x y z)))))
-
-(define (bin op a b)
-  (string-append (wrap a) " " op " " (wrap b)))
-
-(define (decl t r v)
-  (string-append t " r" (number->string r) " = " (glsl-expr v) ";"))
-
-; Generates a GLSL expression from an expression-level intermediate.
-(define (glsl-expr form)
-  (match form
-    [(list '- a b) (bin "-" (glsl-expr a) (glsl-expr b))]
-    [(list 'r n) (string-append "r" (number->string n))]
-    [(list 'cv (list x y z)) (vec3 x y z)]
-    [(list 'cs x) (number->string (->fl x))]
-    [(list 'length v) (fn "length" (glsl-expr v))]
-    [(list 'dot a b) (fn "dot" (glsl-expr a) (glsl-expr b))]
-    [(list 'max a b) (fn "max" (glsl-expr a) (glsl-expr b))]
-    [(list 'min a b) (fn "min" (glsl-expr a) (glsl-expr b))]
-    [_ (error "bad expression passed to glsl-expr: " form)]))
-
-(define (glsl-stmt form)
-  (match form
-    [(list 'assigns r v) (decl "float" r v)]
-    [(list 'assignv r v) (decl "vec3" r v)]
-    [_ (error "bad statement passed to glsl-stmt: " form)]))
-
-(define (node->glsl n)
-  (let-values ([(r s) (generate-statements n)])
-    (append (list "float distanceField(vec3 r0) {")
-            (map glsl-stmt s)
-            (list (string-append "return r" (number->string r) ";"))
-            (list "}")
-            )))
