@@ -5,10 +5,13 @@
 
 (provide
   (struct-out vec3)
+  vec3-length
   vec3-normalize
 
   (struct-out quat)
+  quat-identity-rotation
   quat-mul
+  quat-conjugate
   quat-normalize
   quat-rotate
   quat-rotation-from-to
@@ -62,6 +65,8 @@
 ; the vector portion gives the coefficients for each of the three basis vectors.
 
 (struct quat (s v) #:transparent)
+
+(define (quat-identity-rotation) (quat 1 (vec3 0 0 0)))
 
 ; The quaternion conjugate, written q* in math.
 (define (quat-conjugate q)

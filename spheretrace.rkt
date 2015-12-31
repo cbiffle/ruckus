@@ -6,6 +6,7 @@
 (require "viewer.rkt")
 (require "edsl.rkt")
 (require "compiler.rkt")
+(require "math.rkt")
 
 (provide spheretrace)
 
@@ -54,7 +55,7 @@
     (set! program (call-with-input-file "preamble.glsl" load-program))
     (printf "This OpenGL does not support shaders, you'll get a plain white rectangle.~%")))
 
-(define (draw width height)
+(define (draw width height orientation)
   ; the coordinates
   (define vertex-array
     (f64vector 0.0 0.0
@@ -72,8 +73,14 @@
   (when program
     (glUseProgram program)
     (let ([resU (glGetUniformLocation program "resolution")])
-      (glUniform2f resU (->fl width) (->fl height)))
-    )
+      (glUniform2f resU (->fl width) (->fl height))))
+    (let ([orientU (glGetUniformLocation program "orientation")]
+          [qv (quat-v (quat-conjugate orientation))])
+      (glUniform4f orientU
+                   (real->double-flonum (vec3-x qv))
+                   (real->double-flonum (vec3-y qv))
+                   (real->double-flonum (vec3-z qv))
+                   (real->double-flonum (quat-s orientation))))
 
   ; Let's be "modern" and use the array functions (introduced in OpenGL 1.1).
   ; Note that you need to ask GL everything 3 times:

@@ -16,6 +16,7 @@ const float alpha = 8.;
 const vec3 MAT_COLOR = vec3(1, 0.8, 0.3);
 
 uniform vec2 resolution;
+uniform vec4 orientation;
 
 //////////////////////////////////////////////////////////////
 // Quaternion support.  Note that quaternions are represented
@@ -69,17 +70,21 @@ void main() {
 
   vec4 color = vec4(0.1, 0.1, 0.3, 1);
 
+  vec3 rLight = qrot(orientation, LIGHT);
+
   int stepsTaken = 0;
   for (int steps = 0; steps < QUAL; ++steps) {
     stepsTaken = steps;
 
     if (pos.z > far) break;
+
+    vec3 tpos = qrot(orientation, pos);
     
-    float d = distanceField(pos) - ISOSURFACE;
+    float d = distanceField(tpos) - ISOSURFACE;
     if (d < EPSILON) {
       // Hit!
-      vec3 normal = distanceFieldNormal(pos);
-      vec3 nl_m = normalize(LIGHT);
+      vec3 normal = distanceFieldNormal(tpos);
+      vec3 nl_m = normalize(rLight);
       vec3 r_m = -reflect(nl_m, normal);
       
       float ambient = i_a * k_a;

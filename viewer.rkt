@@ -3,8 +3,21 @@
 #lang racket/gui
 
 (require (planet "rgl.rkt" ("stephanh" "RacketGL.plt" 1 3)))
+(require "math.rkt")
 
 (provide view)
+
+(define (get-arcball-vector x y w h)
+  (let* ([dim (min w h)]
+         [p (vec3 (((x . / . dim) . * . 2) . - . 1)
+                  (- (((y . / . dim) . * . 2) . - . 1))
+                  0)]
+         [op-sqr (+ (sqr (vec3-x p)) (sqr (vec3-y p)))])
+    (if (<= op-sqr 1)
+      (struct-copy vec3 p [z (sqrt (1 . - . op-sqr))])
+      (vec3-normalize p))))
+
+
 
 (define gl-viewer%
   (class canvas%
@@ -15,8 +28,8 @@
     (init-field (setup void))
 
     (define setup-called #f)
-    (define x-rotation 0)
-    (define y-rotation 0)
+    (define orientation (quat-identity-rotation))
+    (define active-rotation (quat-identity-rotation))
     (define zoom 1)
 
     (define/override (on-size width height)
@@ -44,7 +57,7 @@
           (glPushMatrix)
           (let ([width (send this get-width)]
                 [height (send this get-height)])
-            (draw width height))
+            (draw width height (quat-mul orientation active-rotation)))
           (glPopMatrix)
           (swap-gl-buffers)
           ))
@@ -58,14 +71,17 @@
         (case (send event get-event-type)
           ((left-down)
            (set! handle-motion
-             (let ((old-x x) (old-y y))
+             (let* ([w (send this get-width)]
+                    [h (send this get-height)]
+                    [start-v (get-arcball-vector x y w h)])
                (lambda (new-x new-y)
-                 (set! x-rotation (+ x-rotation (- new-x old-x)))
-                 (set! y-rotation (+ y-rotation (- new-y old-y)))
-                 (set! old-x new-x)
-                 (set! old-y new-y)
+                 (let* ([new-v (get-arcball-vector new-x new-y w h)]
+                        [rot (quat-rotation-from-to start-v new-v)])
+                   (set! active-rotation (quat-rotation-from-to start-v new-v)))
                  (refresh)))))
           ((left-up)
+           (set! orientation (quat-mul orientation active-rotation))
+           (set! active-rotation (quat-identity-rotation))
            (set! handle-motion void))
           ((motion) (handle-motion x y)))))
 
