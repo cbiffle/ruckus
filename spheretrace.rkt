@@ -28,7 +28,8 @@
          [lines (vector-append preamble gen)]
          (sizes (for/list ((line (in-vector lines))) (string-length line)))
          (sizes (list->s32vector sizes)))
-   (glShaderSource shader (vector-length lines) lines sizes)))
+   (glShaderSource shader (vector-length lines) lines sizes)
+   lines))
 
 (define (get-shader-info-log shader)
   (let ([log-length (get-shader-parameter shader GL_INFO_LOG_LENGTH)])
@@ -37,11 +38,12 @@
       (bytes->string/utf-8 info-log #\? 0 actual-length))))
 
 (define (load-program port)
-  (let ((program (glCreateProgram))
-        (shader (glCreateShader GL_FRAGMENT_SHADER)))
-    (load-program-source shader port)
+  (let* ([program (glCreateProgram)]
+         [shader (glCreateShader GL_FRAGMENT_SHADER)]
+         [lines (load-program-source shader port)])
     (glCompileShader shader)
     (unless (= (get-shader-parameter shader GL_COMPILE_STATUS) GL_TRUE)
+      (for ([line lines]) (writeln line))
       (error 'load-program "error compiling: ~a" (get-shader-info-log shader)))
     (glAttachShader program shader)
     (glLinkProgram program)
