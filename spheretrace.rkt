@@ -56,7 +56,7 @@
           (gl-has-extension? 'GL_ARB_shader_objects))
     (set! program (call-with-input-file "preamble.glsl" load-program))
     (printf "This OpenGL does not support shaders, you'll get a plain white rectangle.~%"))
-  '(shaded complexity))
+  '(shaded complexity distance))
 
 (define (draw width height orientation quality step-limit mode)
   ; the coordinates
@@ -84,6 +84,9 @@
 
     (let ([scU (glGetUniformLocation program "showComplexity")])
       (glUniform1i scU (if (eq? mode 'complexity) 1 0)))
+
+    (let ([scU (glGetUniformLocation program "showDistance")])
+      (glUniform1i scU (if (eq? mode 'distance) 1 0)))
 
     (let ([resU (glGetUniformLocation program "resolution")])
       (glUniform2f resU (->fl width) (->fl height))))

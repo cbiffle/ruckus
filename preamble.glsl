@@ -18,6 +18,7 @@ uniform vec4 orientation;
 uniform float closeEnough;
 uniform int stepLimit;
 uniform bool showComplexity;
+uniform bool showDistance;
 
 //////////////////////////////////////////////////////////////
 // Quaternion support.  Note that quaternions are represented
@@ -56,6 +57,17 @@ vec3 distanceFieldNormal(vec3 pos) {
   return normalize(g);
 }
 
+vec3 hsv2rgb(vec3 c) {
+  // Source: http://lolengine.net/blog/2013/07/27/rgb-to-hsv-in-glsl
+  vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+  vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+  return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+}
+
+vec4 falseColor(float level) {
+  return vec4(hsv2rgb(vec3(level + (120. / 360.), 1, 1)), 1);
+}
+
 void main() {
   float near =  resolution.x * 1.2 / 2.;
   float far  = -resolution.x * 1.2 / 2.;
@@ -73,6 +85,7 @@ void main() {
   vec3 rLight = qrot(orientation, LIGHT);
 
   int stepsTaken = 0;
+  float d = 0.;
   for (int steps = 0; steps < stepLimit; ++steps) {
     stepsTaken = steps;
 
@@ -80,7 +93,7 @@ void main() {
 
     vec3 tpos = qrot(orientation, pos);
     
-    float d = distanceField(tpos) - ISOSURFACE;
+    d = distanceField(tpos) - ISOSURFACE;
     if (d <= closeEnough) {
       // Hit!
       vec3 normal = distanceFieldNormal(tpos);
@@ -99,8 +112,10 @@ void main() {
     }
   }
 
-  vec4 complexity = vec4(float(stepsTaken) / float(stepLimit));
+  vec4 complexity = falseColor(float(stepsTaken) / float(stepLimit));
+  vec4 distance = falseColor(d / closeEnough);
 
-  gl_FragColor = showComplexity ? complexity : color;
+  gl_FragColor = showComplexity ? complexity
+                                : showDistance ? distance : color;
 }
 
