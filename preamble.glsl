@@ -115,7 +115,7 @@ void main() {
   }
 
   vec4 complexity = falseColor(float(stepsTaken) / float(stepLimit));
-  vec4 distance = falseColor(d / closeEnough);
+  vec4 distance = falseColor(clamp(d / closeEnough, 0., 1.));
 
   gl_FragColor = showComplexity ? complexity
                                 : showDistance ? distance : color;
