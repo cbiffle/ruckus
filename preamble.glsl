@@ -42,6 +42,10 @@ vec3 qrot(vec4 q, vec3 v) {
   return qmul(qmul(q, vec4(v, 0)), qconj(q)).xyz;
 }
 
+float dfSphere(float radius, vec3 p) {
+  return length(p) - radius;
+}
+
 float dfBox(vec3 corner, vec3 p) {
   vec3 d = abs(p) - corner;
   return min(max(d.x, max(d.y, d.z)), 0.)

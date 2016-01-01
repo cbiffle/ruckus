@@ -160,7 +160,7 @@
     [else     (error "unmatched node type in generate: " (node-type node))]))
 
 (define (generate-sphere node query rn)
-  (code `(assigns ,rn (- (length (r ,query)) (cs ,(car (node-atts node))))))
+  (code `(assigns ,rn (sphere (cs ,(car (node-atts node))) (r ,query))))
   (values rn (+ rn 1)))
 
 (define (generate-union node query rn-initial)
@@ -262,6 +262,7 @@
     [(list 'min a b) (fn "min" (glsl-expr a) (glsl-expr b))]
     [(list 'qrot q v) (fn "qrot" (glsl-expr q) (glsl-expr v))]
     [(list 'box c p) (fn "dfBox" (glsl-expr c) (glsl-expr p))]
+    [(list 'sphere r p) (fn "dfSphere" (glsl-expr r) (glsl-expr p))]
     [_ (error "bad expression passed to glsl-expr: " form)]))
 
 (define (glsl-stmt form)
