@@ -2,6 +2,8 @@ const float PI = 3.14159265358979323846;
 const float ISOSURFACE = 0.0;
 const vec3 LIGHT = vec3(0, 0, 100);
 
+const float TRUST = 1.0;
+
 const float i_a = 0.3;
 const float i_d = 0.6;
 const float i_s = 0.4;
@@ -108,7 +110,7 @@ void main() {
       color = vec4(light, 1);
       break;
     } else {
-      pos += d * dir;
+      pos += d * TRUST * dir;
     }
   }
 
