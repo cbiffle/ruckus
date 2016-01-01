@@ -26,7 +26,7 @@
       [(inverse) (canon-inverse n)]
       [(translate) (canon-translate n)]
       [(rotate) (canon-rotate n)]
-      [(sphere half) (list n)]
+      [(sphere half box) (list n)]
       [else (error "unknown node type in canonicalize: " (node-type n))])))
 
 ; The root node is rewritten into an implicit union, and is not seen beyond
@@ -151,6 +151,7 @@
   (case (node-type node)
     [(sphere) (generate-sphere node query rn)]
     [(half)   (generate-half node query rn)]
+    [(box)   (generate-box node query rn)]
     [(union root)  (generate-union node query rn)]
     [(intersection)  (generate-intersection node query rn)]
     [(inverse) (generate-inverse node query rn)]
@@ -211,6 +212,11 @@
     (code `(assigns ,rn (- (dot (r ,query) (cv ,normal)) (cs ,dist))))
     (values rn (+ rn 1))))
 
+(define (generate-box node query rn)
+  (let ([corner (first (node-atts node))])
+    (code `(assigns ,rn (box (cv ,corner) (r ,query))))
+    (values rn (+ rn 1))))
+
 (define (generate-statements node)
   (parameterize ([*statements* '()])
     (let-values ([(r n) (generate (first (canonicalize node)) 0 1)])
@@ -247,6 +253,7 @@
     [(list '- a b) (bin "-" (glsl-expr a) (glsl-expr b))]
     [(list 'r n) (string-append "r" (number->string n))]
     [(list 'cv (list x y z)) (glsl-vec3 x y z)]
+    [(list 'cv (vec3 x y z)) (glsl-vec3 x y z)]
     [(list 'cq q) (glsl-quat q)]
     [(list 'cs x) (number->string (->fl x))]
     [(list 'length v) (fn "length" (glsl-expr v))]
@@ -254,6 +261,7 @@
     [(list 'max a b) (fn "max" (glsl-expr a) (glsl-expr b))]
     [(list 'min a b) (fn "min" (glsl-expr a) (glsl-expr b))]
     [(list 'qrot q v) (fn "qrot" (glsl-expr q) (glsl-expr v))]
+    [(list 'box c p) (fn "dfBox" (glsl-expr c) (glsl-expr p))]
     [_ (error "bad expression passed to glsl-expr: " form)]))
 
 (define (glsl-stmt form)

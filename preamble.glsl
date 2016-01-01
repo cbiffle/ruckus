@@ -42,6 +42,12 @@ vec3 qrot(vec4 q, vec3 v) {
   return qmul(qmul(q, vec4(v, 0)), qconj(q)).xyz;
 }
 
+float dfBox(vec3 corner, vec3 p) {
+  vec3 d = abs(p) - corner;
+  return min(max(d.x, max(d.y, d.z)), 0.)
+       + length(max(d, 0.));
+}
+
 float distanceField(vec3 r0);
 
 vec3 distanceFieldNormal(vec3 pos) {

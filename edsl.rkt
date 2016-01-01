@@ -12,9 +12,9 @@
   rotate
 
   sphere
+  rects
   cube
   half-space
-  rects
 
   call-with-edsl-root)
 
@@ -114,15 +114,7 @@
   (add-child 'half p d))
 
 (define (rects sx sy sz)
-  (intersection
-    (half-space '(-1 0 0) 0)
-    (half-space '(+1 0 0) sx)
-    (half-space '(0 -1 0) 0)
-    (half-space '(0 +1 0) sy)
-    (half-space '(0 0 -1) 0)
-    (half-space '(0 0 +1) sz)))
+  (add-child 'box (vec3 (/ sx 2) (/ sy 2) (/ sz 2))))
 
 (define (cube s)
-  (let ([shift (- (/ s 2))])
-    (translate (list shift shift shift)
-               (rects s s s))))
+  (rects s s s))
