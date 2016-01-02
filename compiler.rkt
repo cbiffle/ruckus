@@ -27,6 +27,7 @@
       [(translate) (canon-translate n)]
       [(rotate) (canon-rotate n)]
       [(extrude) (canon-extrude n)]
+      [(mirror) (canon-mirror n)]
       [(sphere half box) (list n)]
       [(rect circle) (canon-2d n)]
       [else (error "unknown node type in canonicalize: " (node-type n))])))
@@ -144,6 +145,24 @@
                                                             '()
                                                             children)))])])))
 
+; A canonical mirror has a single child.  Mirrors of more than one
+; child are assumed to be unions of the children and rewritten thus.
+;
+; The kind attribute must also match the known axes.
+(define (canon-mirror n)
+  (let ([children (node-children n)]
+        [axis (first (node-atts n))])
+    (unless (member axis '(x y z))
+      (error "bad axis used in mirror: " axis))
+
+    (case (length children)
+      [(0) '()]
+      [(1) (list n)]
+      [else (struct-copy node n
+                         [children (list (canon-union (node 'union
+                                                            '()
+                                                            children)))])])))
+
 ; A canonical rotate has a single child.  Rotations of more than one child are
 ; assumed to be unions of the children and rewritten thus.
 ;
@@ -185,6 +204,7 @@
     [(translate)  (generate-translate node query rn)]
     [(rotate)  (generate-rotate node query rn)]
     [(extrude) (generate-extrude node query rn)]
+    [(mirror) (generate-mirror node query rn)]
     [else     (error "unmatched node type in generate: " (node-type node))]))
 
 (define (generate-sphere node query rn)
@@ -242,6 +262,25 @@
                                    rn1)])
     (code `(assigns ,rn2 (max (r ,d) (- (abs (proj (r ,query) z)) (cs ,th)))))
     (values rn2 (+ rn2 1))))
+
+(define (generate-mirror node query rn0)
+  (unless (= 1 (length (node-children node)))
+    (error "non-canonical mirror passed to generate"))
+
+  ; Populate rn with the reflection of the query point into the positive
+  ; side of the mirror axis space.
+  (case (first (node-atts node))
+    [(x) (code `(assignv ,rn0 (vec3 (abs (proj (r ,query) x))
+                                    (proj (r ,query) yz))))]
+    [(y) (code `(assignv ,rn0 (vec3 (proj (r ,query) x)
+                                    (abs (proj (r ,query) y))
+                                    (proj (r ,query) zz))))]
+    [(z) (code `(assignv ,rn0 (vec3 (proj (r ,query) xy)
+                                    (abs (proj (r ,query) z)))))])
+
+  (let* ([children (node-children node)]
+         [rn1 (+ rn0 1)])
+    (generate (first children) rn0 rn1)))
 
 (define (generate-rotate node query rn)
   (unless (= 1 (length (node-children node)))

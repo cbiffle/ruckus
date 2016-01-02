@@ -12,6 +12,10 @@
   rotate
   extrude
 
+  mirror-x
+  mirror-y
+  mirror-z
+
   sphere
   rects
   cube
@@ -114,6 +118,20 @@
 
 (define-syntax-rule (extrude depth b bs ...)
   (call-with-extrusion depth (lambda () b bs ...)))
+
+(define (call-with-mirror kind body)
+  (begin-child 'mirror kind)
+  (body)
+  (end-child))
+
+(define-syntax-rule (mirror-x b bs ...)
+  (call-with-mirror 'x (lambda () b bs ...)))
+
+(define-syntax-rule (mirror-y b bs ...)
+  (call-with-mirror 'y (lambda () b bs ...)))
+
+(define-syntax-rule (mirror-z b bs ...)
+  (call-with-mirror 'z (lambda () b bs ...)))
 
 
 ; ------------------------------------------------------------------------
