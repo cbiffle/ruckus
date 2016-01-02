@@ -22,7 +22,8 @@ uniform int stepLimit;
 uniform bool showComplexity;
 uniform bool showDistance;
 
-//////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////////////
 // Quaternion support.  Note that quaternions are represented
 // with the vector portion in xyz and the scalar in w.
 
@@ -42,6 +43,13 @@ vec3 qrot(vec4 q, vec3 v) {
   return qmul(qmul(q, vec4(v, 0)), qconj(q)).xyz;
 }
 
+
+////////////////////////////////////////////////////////////////////////////////
+// Primitive distance field evaluators.  These are defined here and invoked
+// from generated code to reduce duplication, because while I'm pretty
+// confident that GLSL compilers can inline, I'm not sure they can extract
+// functions.
+
 float dfSphere(float radius, vec3 p) {
   return length(p) - radius;
 }
@@ -52,12 +60,18 @@ float dfBox(vec3 corner, vec3 p) {
        + length(max(d, 0.));
 }
 
+
+////////////////////////////////////////////////////////////////////////////////
+// Global distance field evaluator.
+
+// Prototype; generated at runtime and appended to this file.
 float distanceField(vec3 r0);
 
+// Computes the distance field gradient using the method of central
+// differences, which also happens to approximate the normal of a
+// nearby surface.  We use it for lighting calculations.
 vec3 distanceFieldNormal(vec3 pos) {
-  // Computes the distance field gradient using the method of central
-  // differences, which also happens to approximate the normal of a
-  // nearby surface.
+  // TODO: should this actually depend on the intersection threshold?
   float h = closeEnough / 2.;
 
   vec3 g = vec3(
@@ -65,44 +79,77 @@ vec3 distanceFieldNormal(vec3 pos) {
     distanceField(pos + vec3(0, h, 0)) - distanceField(pos - vec3(0, h, 0)),
     distanceField(pos + vec3(0, 0, h)) - distanceField(pos - vec3(0, 0, h)));
 
-  // TODO: is normalizing this vector necessary?
   return normalize(g);
 }
 
+
+////////////////////////////////////////////////////////////////////////////////
+// False-color visualization support.
+
+// Converts an HSV color to its RGB equivalent.  Generating false colors in
+// HSV is *far* more convenient, so we pay the (low) cost.
+// Source: http://lolengine.net/blog/2013/07/27/rgb-to-hsv-in-glsl
 vec3 hsv2rgb(vec3 c) {
-  // Source: http://lolengine.net/blog/2013/07/27/rgb-to-hsv-in-glsl
   vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
   vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
   return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
 }
 
+// Generates a color intended to make gradations between 0 and 1 more obvious.
+// The current implementation wraps around above 1, so you may want to clamp.
 vec4 falseColor(float level) {
   return vec4(hsv2rgb(vec3(level + (120. / 360.), 1, 1)), 1);
 }
 
+
+////////////////////////////////////////////////////////////////////////////////
+// Fragment shader entry.
+
 void main() {
+  // Paperwork!
+
+  // Clipping plane Z coordinates.
   float near =  resolution.x * 1.2 / 2.;
   float far  = -resolution.x * 1.2 / 2.;
 
+  // TODO: camera Z needs to depend on clip plane positions!
   vec3 cameraPosition = vec3(0, 0, 20);
 
+  // Position of pixel being traced on the near clip plane.
   vec3 pos = vec3(gl_FragCoord.xy - resolution.xy / 2., near);
   vec3 npos = pos / resolution.x;
   
+  // Direction in which this ray will advance.
   vec3 dir = normalize(npos - cameraPosition);
+  // Shorthand for the object-to-eye vector, used for specular reflection.
   vec3 toEye = -dir;
 
+  // Initialized with the background color, this will be overwritten if
+  // the current ray hits an object.
   vec4 color = vec4(0.1, 0.1, 0.3, 1);
 
+  // Rotate the light position into object space.
   vec3 rLight = qrot(orientation, LIGHT);
+
+  // Ray-marching loop!
 
   int stepsTaken = 0;
   float d = 0.;
   for (int steps = 0; steps < stepLimit; ++steps) {
+    // GLSL won't let us use an externally declared iteration variable, so
+    // we copy 'steps' to 'stepsTaken' at each iteration so that we may use
+    // it later to show march complexity.
     stepsTaken = steps;
 
+    // Early-exit the marching process at the far clip plane.  This improves
+    // performance significantly when software rendering with Mesa; unclear
+    // whether it helps on hardware.
     if (pos.z < far) break;
 
+    // Transform the ray's position into object space.
+    // TODO: couldn't we just do the marching in object space?  Sure, it
+    // makes the far clip plane check more expensive, but it's just a plane
+    // test....
     vec3 tpos = qrot(orientation, pos);
     
     d = distanceField(tpos) - ISOSURFACE;
@@ -120,10 +167,17 @@ void main() {
       color = vec4(light, 1);
       break;
     } else {
+      // Keep on marching.  The TRUST ratio is used to de-rate the distance
+      // estimate if we think it may not be a true lower bound.  TBD.
       pos += d * TRUST * dir;
     }
   }
 
+  // At exit from the loop we've either hit, in which case 'color' is set,
+  // or flown off into space, in which case we've got the background color.
+  // In the latter case, 'd' is basically random.
+
+  // Compute the alternate viz modes.
   vec4 complexity = falseColor(float(stepsTaken) / float(stepLimit));
   vec4 distance = falseColor(clamp(d / closeEnough, 0., 1.));
 
