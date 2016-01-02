@@ -10,11 +10,14 @@
   difference
   translate
   rotate
+  extrude
 
   sphere
   rects
   cube
   half-space
+  rect
+  circle
 
   call-with-edsl-root)
 
@@ -104,6 +107,15 @@
 (define-syntax-rule (rotate axis angle b bs ...)
   (call-with-rotation axis angle (lambda () b bs ...)))
 
+(define (call-with-extrusion depth body)
+  (begin-child 'extrude depth)
+  (body)
+  (end-child))
+
+(define-syntax-rule (extrude depth b bs ...)
+  (call-with-extrusion depth (lambda () b bs ...)))
+
+
 ; ------------------------------------------------------------------------
 ; Primitives and basic derived shapes.
 
@@ -118,3 +130,9 @@
 
 (define (cube s)
   (rects s s s))
+
+(define (rect sx sy)
+  (add-child 'rect sx sy))
+
+(define (circle r)
+  (add-child 'circle r))

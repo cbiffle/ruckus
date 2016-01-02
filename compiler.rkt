@@ -26,13 +26,28 @@
       [(inverse) (canon-inverse n)]
       [(translate) (canon-translate n)]
       [(rotate) (canon-rotate n)]
+      [(extrude) (canon-extrude n)]
       [(sphere half box) (list n)]
+      [(rect circle) (canon-2d n)]
       [else (error "unknown node type in canonicalize: " (node-type n))])))
 
 ; The root node is rewritten into an implicit union, and is not seen beyond
 ; this point.
 (define (canon-root n)
   (canon-union (struct-copy node n [type 'union])))
+
+; 2D primitives are inflated into thin 3D primitives.
+(define (canon-2d n)
+  (case (node-type n)
+    [(rect)
+     (let ([w (first (node-atts n))]
+           [h (second (node-atts n))])
+       (list (node 'box (list (vec3 w h 1)) '())))]
+    [(circle)
+     (let ([r (first (node-atts n))])
+       (list (node 'sphere (list r) '())))]
+    ))
+
 
 ; A canonical union node has exactly two children.  Unions of more than two
 ; children are rewritten into binary trees.
@@ -117,6 +132,18 @@
                                                             '()
                                                             children)))])])))
 
+; A canonical extrude has a single child.  Extrusions of more than one
+; child are assumed to be unions of the children and rewritten thus.
+(define (canon-extrude n)
+  (let ([children (node-children n)])
+    (case (length children)
+      [(0) '()]
+      [(1) (list n)]
+      [else (struct-copy node n
+                         [children (list (canon-union (node 'union
+                                                            '()
+                                                            children)))])])))
+
 ; A canonical rotate has a single child.  Rotations of more than one child are
 ; assumed to be unions of the children and rewritten thus.
 ;
@@ -157,6 +184,7 @@
     [(inverse) (generate-inverse node query rn)]
     [(translate)  (generate-translate node query rn)]
     [(rotate)  (generate-rotate node query rn)]
+    [(extrude) (generate-extrude node query rn)]
     [else     (error "unmatched node type in generate: " (node-type node))]))
 
 (define (generate-sphere node query rn)
@@ -198,6 +226,22 @@
 
   (code `(assignv ,rn (- (r ,query) (cv ,(first (node-atts node))))))
   (generate (first (node-children node)) rn (+ rn 1)))
+
+(define (generate-extrude node query rn0)
+  (unless (= 1 (length (node-children node)))
+    (error "non-canonical extrude passed to generate"))
+
+  ; Populate rn with the projection of the query point onto the XY plane.
+  (code `(assignv ,rn0 (vec3 (proj (r ,query) xy) (cs 0))))
+
+  (let*-values ([(children) (node-children node)]
+                [(th) (first (node-atts node))]
+                [(rn1) (+ rn0 1)]
+                [(d rn2) (generate (first children)
+                                   rn0
+                                   rn1)])
+    (code `(assigns ,rn2 (max (r ,d) (- (abs (proj (r ,query) z)) (cs ,th)))))
+    (values rn2 (+ rn2 1))))
 
 (define (generate-rotate node query rn)
   (unless (= 1 (length (node-children node)))
@@ -241,6 +285,9 @@
    (apply fn "vec4"
           (map number->string (map real->double-flonum (list x y z s))))])
 
+(define (glsl-proj v sym)
+  (string-append (wrap v) "." (symbol->string sym)))
+
 (define (bin op a b)
   (string-append (wrap a) " " op " " (wrap b)))
 
@@ -260,9 +307,13 @@
     [(list 'dot a b) (fn "dot" (glsl-expr a) (glsl-expr b))]
     [(list 'max a b) (fn "max" (glsl-expr a) (glsl-expr b))]
     [(list 'min a b) (fn "min" (glsl-expr a) (glsl-expr b))]
+    [(list 'abs a) (fn "abs" (glsl-expr a))]
     [(list 'qrot q v) (fn "qrot" (glsl-expr q) (glsl-expr v))]
     [(list 'box c p) (fn "dfBox" (glsl-expr c) (glsl-expr p))]
     [(list 'sphere r p) (fn "dfSphere" (glsl-expr r) (glsl-expr p))]
+    [(list 'vec3 a b) (fn "vec3" (glsl-expr a) (glsl-expr b))]
+    [(list 'vec3 a b c) (fn "vec3" (glsl-expr a) (glsl-expr b) (glsl-expr c))]
+    [(list 'proj v sym) (glsl-proj (glsl-expr v) sym)]
     [_ (error "bad expression passed to glsl-expr: " form)]))
 
 (define (glsl-stmt form)

@@ -1,0 +1,109 @@
+In OpenSCAD, I find it convenient to design some parts in 2D and later convert
+them to 3D with simple transforms (typically extrusion).  This is particularly
+useful for laser-cut tab-slot designs.
+
+Does this make sense for my new system?  If so, how would it work?
+
+
+Working Without 2D
+------------------
+
+For the particular case of a laser-cut panelized design, one could do the work
+in 3D.  Perhaps by defining shapes as having some token (unit) thickness in the
+Z axis.
+
+The problem arises when you want to punch holes in the parts.  One cannot punch
+a hole through a thickness-1 panel with a thickness-1 cylinder, because it
+leaves the top and bottom of the cylinder ambiguously webbed with infinitely
+thin membranes.  (Actually I think the frep system can handle this alright, but
+it used to break mesh generation in OpenSCAD and so I suspect it's something to
+avoid.)
+
+You can avoid this by making the intersection shapes a wee bit thicker than the
+base piece.  But this winds up continuing ad nauseum.
+
+I don't like this approach.  I list it for completeness.
+
+
+Native 2D
+---------
+
+There's no particular reason why I couldn't allow for a real 2D universe of flat
+things, defined as distance fields in the XY plane.
+
+2D things could emerge in the 3D universe by various forms of extrusion, which
+would give them a Z dimension.
+
+3D things could appear in the 2D universe by projection, where the 3D field is
+sampled as a 2D field by fixing the Z coordinate at zero.
+
+This could be stacked arbitrarily: one could build a 3D shape, project it,
+extrude the result, rotate that, project it, extrude the result...
+
+The top-level design would need to be 3D, or I'd need to modify the renderer.
+If we have a simple way of detecting a 2D vs 3D construction, the
+compilation/canonicalization process could simply wrap it in a default extrusion
+pass.
+
+
+Infinite Z
+----------
+
+We can also model 2D primitives in 3D space by giving them infinite Z extent.
+Extrusion, then, would involve intersection with half-spaces.  Because all of
+the primitives are guaranteed to extend above the half-spaces, the ambiguous
+membranes are avoided.
+
+Such a primitive appearing in a 3D render would be ... distracting.
+
+
+Hybrid
+------
+
+A distance field evaluator that ignores the Z axis winds up being somewhere in
+between the two approaches above: such a field rendered in 3D would have
+infinite Z-extent, but in terms of representation it's closer to the "native"
+version.
+
+So I guess they're sort of the same approach.
+
+In the *compiler* and tooling we'd recognize the distinction between 2D and 3D,
+and possibly wrap naked 2D objects in an extrusion transform to keep them from
+filling the entire viewport with their infiniteness.
+
+But in the *renderer*, and in particular in GLSL, we'd implement them as 2D
+distance fields occupying 3D space with infinite extent.
+
+
+Extrusion, Revisited
+====================
+
+Alright.  In pursuit of the hybrid approach described above, I can rigorously
+define the behavior of extrusion.
+
+Extrusion, for our purposes, converts a 2D outline in the XY plane into a solid
+with the outline's profile, extending for a specified length along Z, centered
+around the XY plane.
+
+(Because centering it makes computation simpler: we reflect around the plane by
+taking the absolute value of Z.)
+
+To accomodate 2D and 3D children alike, we must first slice the object at the XY
+plane by zeroing the Z coordinate.  We're left with an object with infinite
+Z-extent.
+
+We then need to convert that into a solid of specified thickness.  The obvious
+method would be intersection with two half-planes, but perhaps this isn't ideal?
+
+The distance from a point above the XY plane to an extruded solid is the
+maximum of the distance from the infinite outline, and the distance from the top
+clip plane, that is
+
+    max(dOutline, abs(p.z) - thickness)
+
+I think this is right; it will take the least negative number for points inside
+the object, meaning the one closest to the periphery.
+
+Given this definition of extrusion, I can actually use rectangular solids and
+spheres in place of rectangles and circles.
+
