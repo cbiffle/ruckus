@@ -1,0 +1,61 @@
+I've now got the ability to mirror designs around axes.  (Though I think I've
+implemented it in a misleading way, because the axis you name is the axis that
+you want to ABS.)
+
+How about instancing and repetition?
+
+Cases that come to mind:
+
+- Replicating a block N times along an axis.
+  - i.e. instancing it several times with translation.
+  - Can be done cheaply in a modulo domain.
+
+- Creating a radially-symmetric thing by replicating a wedge of a design,
+  centered on a vector, N times around that vector.
+  - 
+
+- Instancing a block several times with translation *and* rotation, and possibly
+  scaling.
+
+
+Modulo Domain
+=============
+
+This is where instead of
+
+    float d = df(q);
+
+we do
+
+    float d = df(mod(q, M));
+
+causing an M-sized axis-aligned portion of space to repeat endlessly.  It's
+nearly free.
+
+To limit the repetition, we must intersect it with a bounding volume.  In the
+common case of an axis-aligned cube, this is also pretty cheap.
+
+There is an issue, however.  Like all domain transforms, this can break the
+distance field invariants.
+
+The naive version written above assumes that the voronoi influence cells for
+each repeating instance of a design meet in axis-aligned manifolds every M
+units.  This is not necessarily the case: consider a repeating design that
+consists of a small primitive followed by a large gap.  The influence cell will
+be centered on the primitive, *not* on the M-unit repetition cell.
+
+We can compute the actual influence cells by unioning adjacent instances of the
+repeating unit.  (Adjacent suffices, because this method prevents overhang from
+one instance into the next.)
+
+In other words, for repetition along the X axis,
+
+    float xM = mod(q.x, M);
+    float d = min(df(vec3(xM, q.yz)),
+                  df(vec3(xM - M, q.yz)),
+                  df(vec3(xM + M, q.yz)));
+
+(Pretend that we have three-input `min` for the sake of argument.)
+
+That's more expensive than the naive version, but less expensive than directly
+instancing the subgraph N times if N is 4 or more.

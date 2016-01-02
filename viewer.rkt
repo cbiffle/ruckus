@@ -50,6 +50,7 @@
       )
  
     (define/override (on-paint)
+      (time
       (with-gl-context               
         (lambda ()
           (unless setup-called
@@ -71,7 +72,7 @@
           (glPopMatrix)
           (swap-gl-buffers)
           ))
-      )
+      ))
 
     (define handle-motion void)
 

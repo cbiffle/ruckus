@@ -16,6 +16,8 @@
   mirror-y
   mirror-z
 
+  repeat-x
+
   sphere
   rects
   cube
@@ -132,6 +134,15 @@
 
 (define-syntax-rule (mirror-z b bs ...)
   (call-with-mirror 'z (lambda () b bs ...)))
+
+
+(define (call-with-repeat kind period body)
+  (begin-child 'repeat kind period)
+  (body)
+  (end-child))
+
+(define-syntax-rule (repeat-x period b bs ...)
+  (call-with-repeat 'x period (lambda () b bs ...)))
 
 
 ; ------------------------------------------------------------------------

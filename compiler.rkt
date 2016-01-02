@@ -27,6 +27,7 @@
       [(translate) (canon-translate n)]
       [(rotate) (canon-rotate n)]
       [(extrude) (canon-extrude n)]
+      [(repeat) (canon-repeat n)]
       [(mirror) (canon-mirror n)]
       [(sphere half box) (list n)]
       [(rect circle) (canon-2d n)]
@@ -145,6 +146,18 @@
                                                             '()
                                                             children)))])])))
 
+; A canonical repeat has a single child.  Repetitions of more than one
+; child are assumed to be unions of the children and rewritten thus.
+(define (canon-repeat n)
+  (let ([children (node-children n)])
+    (case (length children)
+      [(0) '()]
+      [(1) (list n)]
+      [else (struct-copy node n
+                         [children (list (canon-union (node 'union
+                                                            '()
+                                                            children)))])])))
+
 ; A canonical mirror has a single child.  Mirrors of more than one
 ; child are assumed to be unions of the children and rewritten thus.
 ;
@@ -205,6 +218,7 @@
     [(rotate)  (generate-rotate node query rn)]
     [(extrude) (generate-extrude node query rn)]
     [(mirror) (generate-mirror node query rn)]
+    [(repeat) (generate-repeat node query rn)]
     [else     (error "unmatched node type in generate: " (node-type node))]))
 
 (define (generate-sphere node query rn)
@@ -282,6 +296,47 @@
          [rn1 (+ rn0 1)])
     (generate (first children) rn0 rn1)))
 
+(define (generate-repeat node query rn0)
+  ; TODO: this is an awful lot of code for a generator.  Perhaps this node
+  ; should be broken up into smaller chunks?  Or perhaps the meat of this
+  ; transform should be moved into a GLSL function?
+  (unless (= 1 (length (node-children node)))
+    (error "non-canonical repeat passed to generate"))
+
+  (let ([children (node-children node)]
+        [axis (first (node-atts node))]
+        [spacing (list 'cs (second (node-atts node)))])
+
+    ; Populate rn0 with the query point made periodic over the interval.
+    (case axis
+      [(x) (code `(assignv ,rn0 (vec3 (mod (proj (r ,query) x) ,spacing)
+                                      (proj (r ,query) yz))))]
+      [(y) (code `(assignv ,rn0 (vec3 (proj (r ,query) x)
+                                      (mod (proj (r ,query) y) ,spacing)
+                                      (proj (r ,query) zz))))]
+      [(z) (code `(assignv ,rn0 (vec3 (proj (r ,query) xy)
+                                      (mod (proj (r ,query) z) ,spacing))))])
+
+    ; Populate rn1 with the negatively shifted query point, rn2 with the
+    ; positive.
+    (let ([z (list 'cs 0)])
+      (case axis
+        [(x)
+         (code `(assignv ,(+ rn0 1) (- (r ,rn0) (vec3 ,spacing ,z ,z))))
+         (code `(assignv ,(+ rn0 2) (+ (r ,rn0) (vec3 ,spacing ,z ,z))))]
+        [(y)
+         (code `(assignv ,(+ rn0 1) (- (r ,rn0) (vec3 ,z ,spacing ,z))))
+         (code `(assignv ,(+ rn0 2) (+ (r ,rn0) (vec3 ,z ,spacing ,z))))]
+        [(z)
+         (code `(assignv ,(+ rn0 1) (- (r ,rn0) (vec3 ,z ,z ,spacing))))
+         (code `(assignv ,(+ rn0 2) (+ (r ,rn0) (vec3 ,z ,z ,spacing))))]))
+
+    (let*-values ([(dc rn3) (generate (first children) rn0 (+ rn0 3))]
+                  [(dm rn4) (generate (first children) (+ rn0 1) rn3)]
+                  [(dp rn5) (generate (first children) (+ rn0 2) rn4)])
+      (code `(assigns ,rn5 (min (r ,dc) (min (r ,dm) (r ,dp)))))
+      (values rn5 (+ rn5 1)))))
+
 (define (generate-rotate node query rn)
   (unless (= 1 (length (node-children node)))
     (error "non-canonical rotate passed to generate"))
@@ -337,6 +392,7 @@
 (define (glsl-expr form)
   (match form
     [(list '- a b) (bin "-" (glsl-expr a) (glsl-expr b))]
+    [(list '+ a b) (bin "+" (glsl-expr a) (glsl-expr b))]
     [(list 'r n) (string-append "r" (number->string n))]
     [(list 'cv (list x y z)) (glsl-vec3 x y z)]
     [(list 'cv (vec3 x y z)) (glsl-vec3 x y z)]
@@ -346,6 +402,7 @@
     [(list 'dot a b) (fn "dot" (glsl-expr a) (glsl-expr b))]
     [(list 'max a b) (fn "max" (glsl-expr a) (glsl-expr b))]
     [(list 'min a b) (fn "min" (glsl-expr a) (glsl-expr b))]
+    [(list 'mod a b) (fn "mod" (glsl-expr a) (glsl-expr b))]
     [(list 'abs a) (fn "abs" (glsl-expr a))]
     [(list 'qrot q v) (fn "qrot" (glsl-expr q) (glsl-expr v))]
     [(list 'box c p) (fn "dfBox" (glsl-expr c) (glsl-expr p))]
