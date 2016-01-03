@@ -107,3 +107,30 @@ the object, meaning the one closest to the periphery.
 Given this definition of extrusion, I can actually use rectangular solids and
 spheres in place of rectangles and circles.
 
+
+Separating the Slice Operation
+==============================
+
+Extrusion as described above included sampling a unit's field without regard to
+the Z axis position of the query point.  This has the effect of giving the unit
+infinite Z-extent and, for all intents and purposes, making its distance field
+a 2D scalar field instead of a 3D.
+
+I am considering whether this operation, which I'm referring to as "slice",
+should be separated from extrusion.
+
+The main advantage I can see is that it can serve as a "tag" for 2D units.  For
+example, here is a box:
+
+    (rects 100 200 300)
+
+and here is a 2D rectangle:
+
+    (slice (rects 100 200 _))
+
+(The Z dimension is immaterial if non-zero; in the current implementation it is
+1.)
+
+`extrude` would map 2D geometry into 3D.  `slice` would do the opposite.
+
+

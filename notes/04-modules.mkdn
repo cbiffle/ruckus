@@ -1,0 +1,44 @@
+Modules, the unit of reuse.
+
+I want to be able to define parameterized modules and then invoke them.
+
+A parameterized module would produce a single GLSL function.  Invocations would
+become function calls.  My hope is that this would produce better code density.
+
+Note that modules and functions are not the same thing.  The designer can choose
+where to place module boundaries, independent of the Racket functions they
+define to group repeating elements (or attach names to things).
+
+I might not use the name "module" since Racket assigns meaning to that.
+Alternatives?
+- Unit
+- Component
+
+
+Strawman syntax:
+
+    ; 'bowl' becomes a unit with identity.  Instances of 'bowl' can be
+    ; recognized even in late stages of processing, and all the way to the
+    ; GLSL layer during viz.
+    (define-unit (bowl radius thickness)
+      ; half-sphere here is merely a function for repeating a pattern.
+      ; It has no identity and is not a unit.
+      (define (half-sphere)
+        (intersection
+          (sphere radius)
+          (half-space '[0 1 0] 0)))
+
+      (difference
+        (half-sphere)
+        (translate `[0 ,thickness 0] (half-sphere))))
+
+      ; This test scene is made up of a single unit instance.
+      ; Units are invoked using function syntax, to make it easier to shift
+      ; unit boundaries.
+      (define (testscene)
+        (bowl 100 20))
+
+
+Implementation thoughts:
+- Defining a unit needs to evaluate its body once, binding some sort of
+  parameter placeholder to each parameter.
