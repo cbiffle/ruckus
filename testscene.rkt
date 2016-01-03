@@ -4,7 +4,9 @@
 (require "spheretrace.rkt")
 
 (define (scene)
-  (repeat-x 200 (bowl 100 20))
+  (intersection
+    (repeat-x 150 (bowl 50 20))
+    (rects 400 100 100))
 
   (translate '(0 125 0)
              (rotate '(0 1 0) 20
