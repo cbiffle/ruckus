@@ -105,9 +105,9 @@
              [(inverse) (node-children (first children))]
              [else (list n)])]
       [else (struct-copy node n
-                         [children (list (canon-union (node 'union
-                                                            '()
-                                                            children)))])])))
+                         [children (canon-union (node 'union
+                                                      '()
+                                                      children))])])))
 
 ; A canonical translate has a single child.  Translations of more than one
 ; child are assumed to be unions of the children and rewritten thus.
@@ -130,9 +130,9 @@
                      (list (first children))
                      (list n))])]
       [else (struct-copy node n
-                         [children (list (canon-union (node 'union
-                                                            '()
-                                                            children)))])])))
+                         [children (canon-union (node 'union
+                                                      '()
+                                                      children))])])))
 
 ; A canonical extrude has a single child.  Extrusions of more than one
 ; child are assumed to be unions of the children and rewritten thus.
@@ -142,9 +142,9 @@
       [(0) '()]
       [(1) (list n)]
       [else (struct-copy node n
-                         [children (list (canon-union (node 'union
-                                                            '()
-                                                            children)))])])))
+                         [children (canon-union (node 'union
+                                                      '()
+                                                      children))])])))
 
 ; A canonical repeat has a single child.  Repetitions of more than one
 ; child are assumed to be unions of the children and rewritten thus.
@@ -154,9 +154,9 @@
       [(0) '()]
       [(1) (list n)]
       [else (struct-copy node n
-                         [children (list (canon-union (node 'union
-                                                            '()
-                                                            children)))])])))
+                         [children (canon-union (node 'union
+                                                      '()
+                                                      children))])])))
 
 ; A canonical mirror has a single child.  Mirrors of more than one
 ; child are assumed to be unions of the children and rewritten thus.
@@ -172,9 +172,9 @@
       [(0) '()]
       [(1) (list n)]
       [else (struct-copy node n
-                         [children (list (canon-union (node 'union
-                                                            '()
-                                                            children)))])])))
+                         [children (canon-union (node 'union
+                                                      '()
+                                                      children))])])))
 
 ; A canonical rotate has a single child.  Rotations of more than one child are
 ; assumed to be unions of the children and rewritten thus.
@@ -193,9 +193,9 @@
              [(rotate) (list (combine n (first children)))]
              [else (list n)])]
       [else (struct-copy node n
-                         [children (list (canon-union (node 'union
-                                                            '()
-                                                            children)))])])))
+                         [children (canon-union (node 'union
+                                                      '()
+                                                      children))])])))
 
 
 ; ----------------------------------------------------------------------
