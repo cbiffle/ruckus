@@ -113,14 +113,14 @@ void main() {
   float far  = -resolution.x * 1.2 / 2.;
 
   // TODO: camera Z needs to depend on clip plane positions!
-  vec3 cameraPosition = vec3(0, 0, 20);
+  vec3 cameraPosition = vec3(0, 0, near + near);
 
   // Position of pixel being traced on the near clip plane.
   vec3 pos = vec3(gl_FragCoord.xy - resolution.xy / 2., near);
   vec3 npos = pos / resolution.x;
   
   // Direction in which this ray will advance.
-  vec3 dir = normalize(npos - cameraPosition);
+  vec3 dir = normalize(pos - cameraPosition);
   // Shorthand for the object-to-eye vector, used for specular reflection.
   vec3 toEye = -dir;
 
