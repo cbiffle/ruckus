@@ -17,6 +17,7 @@ const vec3 MAT_COLOR = vec3(1, 0.8, 0.3);
 
 uniform vec2 resolution;
 uniform vec4 orientation;
+uniform float zoom;
 uniform float closeEnough;
 uniform int stepLimit;
 uniform bool showComplexity;
@@ -109,8 +110,8 @@ void main() {
   // Paperwork!
 
   // Clipping plane Z coordinates.
-  float near =  resolution.x * 1.2 / 2.;
-  float far  = -resolution.x * 1.2 / 2.;
+  float near =  1500.;
+  float far  = -1500.;
 
   // TODO: camera Z needs to depend on clip plane positions!
   vec3 cameraPosition = vec3(0, 0, near + near);
@@ -150,9 +151,9 @@ void main() {
     // TODO: couldn't we just do the marching in object space?  Sure, it
     // makes the far clip plane check more expensive, but it's just a plane
     // test....
-    vec3 tpos = qrot(orientation, pos);
+    vec3 tpos = qrot(orientation, pos) / zoom;
     
-    d = distanceField(tpos) - ISOSURFACE;
+    d = (distanceField(tpos) - ISOSURFACE) * zoom;
     if (d <= closeEnough) {
       // Hit!
       vec3 normal = distanceFieldNormal(tpos);

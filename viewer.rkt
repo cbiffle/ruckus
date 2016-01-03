@@ -66,6 +66,7 @@
             (draw width
                   height
                   (quat-mul orientation active-rotation)
+                  zoom
                   quality
                   step-limit
                   (first remaining-modes)))

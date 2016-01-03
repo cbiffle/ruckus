@@ -58,7 +58,7 @@
     (printf "This OpenGL does not support shaders, you'll get a plain white rectangle.~%"))
   '(shaded complexity distance))
 
-(define (draw width height orientation quality step-limit mode)
+(define (draw width height orientation zoom quality step-limit mode)
   ; the coordinates
   (define vertex-array
     (f64vector 0.0 0.0
@@ -75,6 +75,9 @@
 
   (when program
     (glUseProgram program)
+
+    (let ([zU (glGetUniformLocation program "zoom")])
+      (glUniform1f zU (real->double-flonum zoom)))
 
     (let ([ceU (glGetUniformLocation program "closeEnough")])
       (glUniform1f ceU (real->double-flonum (/ 1 quality))))
