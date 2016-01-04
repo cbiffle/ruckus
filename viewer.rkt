@@ -9,8 +9,10 @@
 
 (define (get-arcball-vector x y w h)
   (let* ([dim (min w h)]
-         [p (vec3 (((x . / . dim) . * . 2) . - . 1)
-                  (- (((y . / . dim) . * . 2) . - . 1))
+         [hw (w . / . 2)]
+         [hh (h . / . 2)]
+         [p (vec3 ((x . - . hw) . / . dim)
+                  (- ((y . - . hh) . / . dim))
                   0)]
          [op-sqr (+ (sqr (vec3-x p)) (sqr (vec3-y p)))])
     (if (<= op-sqr 1)
@@ -65,7 +67,7 @@
                 [height (send this get-height)])
             (draw width
                   height
-                  (quat-mul orientation active-rotation)
+                  (quat-mul active-rotation orientation)
                   zoom
                   quality
                   step-limit
@@ -92,7 +94,7 @@
                    (set! active-rotation (quat-rotation-from-to start-v new-v)))
                  (refresh)))))
           ((left-up)
-           (set! orientation (quat-mul orientation active-rotation))
+           (set! orientation (quat-mul active-rotation orientation))
            (set! active-rotation (quat-identity-rotation))
            (set! handle-motion void))
           ((motion) (handle-motion x y)))))
