@@ -5,6 +5,8 @@
 (require "math.rkt")
 
 (provide
+  node->rkt
+  node->function
   node->glsl)
 
 ; ----------------------------------------------------------------------
@@ -474,8 +476,8 @@
     [(list 'add _ a b) (bin "+" (glsl-expr a) (glsl-expr b))]
     [(list 'length _ v) (fn "length" (glsl-expr v))]
     [(list 'dot _ a b) (fn "dot" (glsl-expr a) (glsl-expr b))]
-    [(list 'abs a) (fn "abs" (glsl-expr a))]
 
+    [(list 'abs a) (fn "abs" (glsl-expr a))]
     [(list 'max a b) (fn "max" (glsl-expr a) (glsl-expr b))]
     [(list 'min a b) (fn "min" (glsl-expr a) (glsl-expr b))]
     [(list 'smin s a b) (fn "smin" (glsl-expr s) (glsl-expr a) (glsl-expr b))]
@@ -501,3 +503,70 @@
             (list (string-append "return r" (number->string r) ";"))
             (list "}")
             )))
+
+; -----------------------------------------------------------------------------
+; Racket code generation.
+
+; Generates a Racket expression from an expression-level intermediate.
+(define (rkt-expr form)
+  (match form
+    [(list 'r n) (string->symbol (string-append "r" (number->string n)))]
+
+    [(list 'cv (list x y z)) `(vec3 ,x ,y ,z)]
+    [(list 'cv v) v]
+    [(list 'cq q) q]
+    [(list 'cs x) x]
+
+    [(list 'sub 1 a b) `(- ,(rkt-expr a) ,(rkt-expr b))]
+    [(list 'add 1 a b) `(+ ,(rkt-expr a) ,(glsl-expr b))]
+
+    [(list 'sub 3 a b) `(vec3-sub ,(rkt-expr a) ,(rkt-expr b))]
+    [(list 'add 3 a b) `(vec3-add ,(rkt-expr a) ,(rkt-expr b))]
+    [(list 'length 3 v) `(vec3-length ,(rkt-expr v))]
+    [(list 'dot 3 a b) `(vec3-dot ,(rkt-expr a) ,(rkt-expr b))]
+
+    [(list 'abs a) `(abs ,(rkt-expr a))]
+
+    [(list 'max a b) `(max ,(rkt-expr a) ,(rkt-expr b))]
+    [(list 'min a b) `(min ,(rkt-expr a) ,(rkt-expr b))]
+    [(list 'smin s a b) `(smooth-min ,(rkt-expr s) ,(rkt-expr a) ,(rkt-expr b))]
+    [(list 'mod a b) `(remainder ,(rkt-expr a) ,(rkt-expr b))]
+    [(list 'qrot q v) `(quat-rotate ,(rkt-expr q) ,(rkt-expr v))]
+
+    [(list 'box c p) `(df-box ,(rkt-expr c) ,(rkt-expr p))]
+    [(list 'sphere r p) `(df-sphere ,(rkt-expr r) ,(rkt-expr p))]
+    [(list 'vec3 a b c) `(vec3 ,(rkt-expr a) ,(rkt-expr b) ,(rkt-expr c))]
+    [(list 'proj 3 v sym) (rkt-proj (rkt-expr v) sym)] ; TODO
+    [_ (error "bad expression passed to rkt-expr: " form)]))
+
+(define (rkt-proj v sym)
+  (case sym
+    [(x) `(vec3-x ,v)]
+    [(y) `(vec3-y ,v)]
+    [(z) `(vec3-z ,v)]
+    [else (error "Unsupported projection for Racket mode:" sym)]))
+
+(define (node->rkt n)
+  (let-values ([(r s) (generate-statements n)])
+    `(lambda (r0) ,(rkt-fold-statements s r))))
+
+(define (node->function n)
+  (let ([ns (make-base-namespace)])
+    (namespace-attach-module (current-namespace)
+                             "math.rkt"
+                             ns)
+    (parameterize ([current-namespace ns])
+      (namespace-require "math.rkt")
+      (namespace-require "df-prims.rkt")
+      (eval (node->rkt n)))))
+
+(define (rkt-fold-statements statements r-final)
+  (match statements
+    [(cons (list (or 'assigns 'assignv) r v) rest)
+     `(let ([,(rkt-expr `(r ,r)) ,(rkt-expr v)])
+        ,(rkt-fold-statements rest r-final))]
+    [(cons (list 'assigns r v) rest)
+     `(let ([,(rkt-expr `(r ,r)) ,(rkt-expr v)])
+        ,(rkt-fold-statements rest r-final))]
+    ['() (rkt-expr `(r ,r-final))]))
+
