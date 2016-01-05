@@ -7,6 +7,14 @@
   (struct-out vec3)
   vec3-length
   vec3-normalize
+  vec3-add
+  vec3-sub
+  vec3-dot
+  vec3-max
+  vec3-abs
+  vec3-x
+  vec3-y
+  vec3-z
 
   (struct-out quat)
   quat-identity-rotation
@@ -57,6 +65,10 @@
 (define (vec3-sub . args) (apply vec3-eltwise - args))
 (define (vec3-mul . args) (apply vec3-eltwise * args))
 (define (vec3-div . args) (apply vec3-eltwise / args))
+(define (vec3-max . args) (apply vec3-eltwise max args))
+(define (vec3-abs v) (vec3 (abs (vec3-x v))
+                           (abs (vec3-y v))
+                           (abs (vec3-z v))))
 
 (define (vec3-normalize v) (vec3-div v (vec3-length v)))
 
