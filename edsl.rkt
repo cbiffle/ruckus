@@ -12,6 +12,7 @@
   translate
   rotate
   extrude
+  iso
 
   mirror-x
   mirror-y
@@ -129,6 +130,14 @@
 
 (define-syntax-rule (extrude depth b bs ...)
   (call-with-extrusion depth (lambda () b bs ...)))
+
+(define (call-with-iso depth body)
+  (begin-child 'iso depth)
+  (body)
+  (end-child))
+
+(define-syntax-rule (iso depth b bs ...)
+  (call-with-iso depth (lambda () b bs ...)))
 
 (define (call-with-mirror kind body)
   (begin-child 'mirror kind)

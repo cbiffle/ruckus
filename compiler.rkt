@@ -22,6 +22,7 @@
       [(root) (canon-root n)]
       [(union) (canon-union n)]
       [(smooth-union) (canon-smooth-union n)]
+      [(iso) (canon-iso n)]
       [(intersection) (canon-intersection n)]
       [(difference) (canon-difference n)]
       [(inverse) (canon-inverse n)]
@@ -151,6 +152,31 @@
                                                       '()
                                                       children))])])))
 
+; A canonical isolevel shift has a single child.  Isolevel shifts of more than
+; one child are assumed to be unions of the children and rewritten thus.
+;
+; Immediately nested isolevel shifts are flattened by adding their sizes.
+;
+; Useless shifts (shifts by zero) are eliminated.
+(define (canon-iso n)
+  (define (combine n1 n2)
+    (let ([d1 (first (node-atts n1))]
+          [d2 (first (node-atts n2))])
+      (struct-copy node n2 [atts (list (+ d1 d2))])))
+
+  (let ([children (node-children n)])
+    (case (length children)
+      [(0) '()]
+      [(1) (case (node-type (first children))
+             [(iso) (list (combine n (first children)))]
+             [else (if (zero? (first (node-atts n)))
+                     (list (first children))
+                     (list n))])]
+      [else (struct-copy node n
+                         [children (canon-union (node 'union
+                                                      '()
+                                                      children))])])))
+
 ; A canonical extrude has a single child.  Extrusions of more than one
 ; child are assumed to be unions of the children and rewritten thus.
 (define (canon-extrude n)
@@ -158,10 +184,10 @@
     (case (length children)
       [(0) '()]
       [(1) (list n)]
-      [else (struct-copy node n
-                         [children (canon-union (node 'union
-                                                      '()
-                                                      children))])])))
+      [else (list (struct-copy node n
+                               [children (canon-union (node 'union
+                                                            '()
+                                                            children))]))])))
 
 ; A canonical repeat has a single child.  Repetitions of more than one
 ; child are assumed to be unions of the children and rewritten thus.
@@ -237,6 +263,7 @@
     [(extrude) (generate-extrude node query rn)]
     [(mirror) (generate-mirror node query rn)]
     [(repeat) (generate-repeat node query rn)]
+    [(iso)  (generate-iso node query rn)]
     [else     (error "unmatched node type in generate: " (node-type node))]))
 
 (define (generate-sphere node query rn)
@@ -252,6 +279,16 @@
                 [(d2 rn2) (generate (second children) query rn1)])
     (code `(assigns ,rn2 (min (r ,d1) (r ,d2))))
     (values rn2 (+ rn2 1))))
+
+(define (generate-iso node query rn-initial)
+  (unless (= 1 (length (node-children node)))
+    (error "non-canonical iso passed to generate"))
+
+  (let*-values ([(children) (node-children node)]
+                [(shift) (first (node-atts node))]
+                [(d rn1) (generate (first children) query rn-initial)])
+    (code `(assigns ,rn1 (- (r ,d) (cs ,shift))))
+    (values rn1 (+ rn1 1))))
 
 (define (generate-smooth-union node query rn-initial)
   (unless (= 2 (length (node-children node)))
