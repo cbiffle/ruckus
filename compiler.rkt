@@ -513,8 +513,8 @@
     [(list 'r n) (string->symbol (string-append "r" (number->string n)))]
 
     [(list 'cv (list x y z)) `(vec3 ,x ,y ,z)]
-    [(list 'cv v) v]
-    [(list 'cq q) q]
+    [(list 'cv (vec3 x y z)) `(vec3 ,x ,y ,z)]
+    [(list 'cq (quat s (vec3 x y z))) `(quat ,s (vec3 ,x ,y ,z))]
     [(list 'cs x) x]
 
     [(list 'sub 1 a b) `(- ,(rkt-expr a) ,(rkt-expr b))]
