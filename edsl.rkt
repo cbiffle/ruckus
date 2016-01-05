@@ -6,6 +6,7 @@
 
 (provide
   union
+  smooth-union
   intersection
   difference
   translate
@@ -78,6 +79,14 @@
 
 (define-syntax-rule (union b bs ...)
   (call-as-union (lambda () b bs ...)))
+
+(define (call-as-smooth-union sm body)
+  (begin-child 'smooth-union sm)
+  (body)
+  (end-child))
+
+(define-syntax-rule (smooth-union sm b bs ...)
+  (call-as-smooth-union sm (lambda () b bs ...)))
 
 (define (call-as-intersection body)
   (begin-child 'intersection)

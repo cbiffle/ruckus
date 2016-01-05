@@ -21,6 +21,7 @@
     (case (node-type n)
       [(root) (canon-root n)]
       [(union) (canon-union n)]
+      [(smooth-union) (canon-smooth-union n)]
       [(intersection) (canon-intersection n)]
       [(difference) (canon-difference n)]
       [(inverse) (canon-inverse n)]
@@ -65,6 +66,22 @@
                                            (canon-union
                                              (node 'union
                                                    '()
+                                                   (rest children))))]))])))
+
+; A canonical smooth union has exactly two children.  Unions of more than two
+; children are rewritten into binary trees.
+(define (canon-smooth-union n)
+  (let ([children (node-children n)])
+    (case (length children)
+      [(0) '()]
+      [(1) children]
+      [(2) (list n)]
+      [else (list
+              (struct-copy node n
+                           [children (cons (first children)
+                                           (canon-union
+                                             (node 'smooth-union
+                                                   (node-atts n)
                                                    (rest children))))]))])))
 
 ; A canonical intersection node has exactly two children.  Intersections of
@@ -212,6 +229,7 @@
     [(half)   (generate-half node query rn)]
     [(box)   (generate-box node query rn)]
     [(union root)  (generate-union node query rn)]
+    [(smooth-union)  (generate-smooth-union node query rn)]
     [(intersection)  (generate-intersection node query rn)]
     [(inverse) (generate-inverse node query rn)]
     [(translate)  (generate-translate node query rn)]
@@ -233,6 +251,17 @@
                 [(d1 rn1) (generate (first children) query rn-initial)]
                 [(d2 rn2) (generate (second children) query rn1)])
     (code `(assigns ,rn2 (min (r ,d1) (r ,d2))))
+    (values rn2 (+ rn2 1))))
+
+(define (generate-smooth-union node query rn-initial)
+  (unless (= 2 (length (node-children node)))
+    (error "non-canonical smooth-union passed to generate"))
+
+  (let*-values ([(children) (node-children node)]
+                [(smooth) (first (node-atts node))]
+                [(d1 rn1) (generate (first children) query rn-initial)]
+                [(d2 rn2) (generate (second children) query rn1)])
+    (code `(assigns ,rn2 (smin (cs ,smooth) (r ,d1) (r ,d2))))
     (values rn2 (+ rn2 1))))
 
 (define (generate-intersection node query rn-initial)
@@ -402,6 +431,7 @@
     [(list 'dot a b) (fn "dot" (glsl-expr a) (glsl-expr b))]
     [(list 'max a b) (fn "max" (glsl-expr a) (glsl-expr b))]
     [(list 'min a b) (fn "min" (glsl-expr a) (glsl-expr b))]
+    [(list 'smin s a b) (fn "smin" (glsl-expr s) (glsl-expr a) (glsl-expr b))]
     [(list 'mod a b) (fn "mod" (glsl-expr a) (glsl-expr b))]
     [(list 'abs a) (fn "abs" (glsl-expr a))]
     [(list 'qrot q v) (fn "qrot" (glsl-expr q) (glsl-expr v))]
