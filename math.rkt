@@ -101,7 +101,7 @@
 
 ; Rotates a vector by a unit quaternion.
 (define (quat-rotate q v)
-  (quat-v (quat-mul q (quat 0 v)) (quat-conjugate q)))
+  (quat-v (quat-mul q (quat 0 v) (quat-conjugate q))))
 
 ; Finds the unit quaternion that describes a rotation from unit vector v
 ; to unit vector w.
