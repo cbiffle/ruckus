@@ -123,7 +123,7 @@ void main() {
   // Direction in which this ray will advance.
   vec3 dir = normalize(pos - cameraPosition);
   // Shorthand for the object-to-eye vector, used for specular reflection.
-  vec3 toEye = -dir;
+  vec3 toEye = qrot(orientation, -dir);
 
   // Initialized with the background color, this will be overwritten if
   // the current ray hits an object.
