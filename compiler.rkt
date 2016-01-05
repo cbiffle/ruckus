@@ -287,7 +287,7 @@
   (let*-values ([(children) (node-children node)]
                 [(shift) (first (node-atts node))]
                 [(d rn1) (generate (first children) query rn-initial)])
-    (code `(assigns ,rn1 (- (r ,d) (cs ,shift))))
+    (code `(assigns ,rn1 (sub 1 (r ,d) (cs ,shift))))
     (values rn1 (+ rn1 1))))
 
 (define (generate-smooth-union node query rn-initial)
@@ -317,14 +317,14 @@
 
   (let*-values ([(children) (node-children node)]
                 [(d rn) (generate (first children) query rn-initial)])
-    (code `(assigns ,rn (- (cs 0) (r ,d))))
+    (code `(assigns ,rn (sub 1 (cs 0) (r ,d))))
     (values rn (+ rn 1))))
 
 (define (generate-translate node query rn)
   (unless (= 1 (length (node-children node)))
     (error "non-canonical translate passed to generate"))
 
-  (code `(assignv ,rn (- (r ,query) (cv ,(first (node-atts node))))))
+  (code `(assignv ,rn (sub 3 (r ,query) (cv ,(first (node-atts node))))))
   (generate (first (node-children node)) rn (+ rn 1)))
 
 (define (generate-extrude node query rn0)
@@ -332,7 +332,9 @@
     (error "non-canonical extrude passed to generate"))
 
   ; Populate rn with the projection of the query point onto the XY plane.
-  (code `(assignv ,rn0 (vec3 (proj (r ,query) xy) (cs 0))))
+  (code `(assignv ,rn0 (vec3 (proj 3 (r ,query) x)
+                             (proj 3 (r ,query) y)
+                             (cs 0))))
 
   (let*-values ([(children) (node-children node)]
                 [(th) (first (node-atts node))]
@@ -340,7 +342,8 @@
                 [(d rn2) (generate (first children)
                                    rn0
                                    rn1)])
-    (code `(assigns ,rn2 (max (r ,d) (- (abs (proj (r ,query) z)) (cs ,th)))))
+    (code `(assigns ,rn2 (max (r ,d)
+                              (sub 1 (abs (proj 3 (r ,query) z)) (cs ,th)))))
     (values rn2 (+ rn2 1))))
 
 (define (generate-mirror node query rn0)
@@ -350,13 +353,15 @@
   ; Populate rn with the reflection of the query point into the positive
   ; side of the mirror axis space.
   (case (first (node-atts node))
-    [(x) (code `(assignv ,rn0 (vec3 (abs (proj (r ,query) x))
-                                    (proj (r ,query) yz))))]
-    [(y) (code `(assignv ,rn0 (vec3 (proj (r ,query) x)
-                                    (abs (proj (r ,query) y))
-                                    (proj (r ,query) zz))))]
-    [(z) (code `(assignv ,rn0 (vec3 (proj (r ,query) xy)
-                                    (abs (proj (r ,query) z)))))])
+    [(x) (code `(assignv ,rn0 (vec3 (abs (proj 3 (r ,query) x))
+                                    (proj 3 (r ,query) y)
+                                    (proj 3 (r ,query) z))))]
+    [(y) (code `(assignv ,rn0 (vec3 (proj 3 (r ,query) x)
+                                    (abs (proj 3 (r ,query) y))
+                                    (proj 3 (r ,query) z))))]
+    [(z) (code `(assignv ,rn0 (vec3 (proj 3 (r ,query) x)
+                                    (proj 3 (r ,query) y)
+                                    (abs (proj 3 (r ,query) z)))))])
 
   (let* ([children (node-children node)]
          [rn1 (+ rn0 1)])
@@ -375,27 +380,29 @@
 
     ; Populate rn0 with the query point made periodic over the interval.
     (case axis
-      [(x) (code `(assignv ,rn0 (vec3 (mod (proj (r ,query) x) ,spacing)
-                                      (proj (r ,query) yz))))]
-      [(y) (code `(assignv ,rn0 (vec3 (proj (r ,query) x)
-                                      (mod (proj (r ,query) y) ,spacing)
-                                      (proj (r ,query) zz))))]
-      [(z) (code `(assignv ,rn0 (vec3 (proj (r ,query) xy)
-                                      (mod (proj (r ,query) z) ,spacing))))])
+      [(x) (code `(assignv ,rn0 (vec3 (mod (proj 3 (r ,query) x) ,spacing)
+                                      (proj 3 (r ,query) y)
+                                      (proj 3 (r ,query) z))))]
+      [(y) (code `(assignv ,rn0 (vec3 (proj 3 (r ,query) x)
+                                      (mod (proj 3 (r ,query) y) ,spacing)
+                                      (proj 3 (r ,query) z))))]
+      [(z) (code `(assignv ,rn0 (vec3 (proj 3 (r ,query) x)
+                                      (proj 3 (r ,query) y)
+                                      (mod (proj 3 (r ,query) z) ,spacing))))])
 
     ; Populate rn1 with the negatively shifted query point, rn2 with the
     ; positive.
     (let ([z (list 'cs 0)])
       (case axis
         [(x)
-         (code `(assignv ,(+ rn0 1) (- (r ,rn0) (vec3 ,spacing ,z ,z))))
-         (code `(assignv ,(+ rn0 2) (+ (r ,rn0) (vec3 ,spacing ,z ,z))))]
+         (code `(assignv ,(+ rn0 1) (sub 3 (r ,rn0) (vec3 ,spacing ,z ,z))))
+         (code `(assignv ,(+ rn0 2) (add 3 (r ,rn0) (vec3 ,spacing ,z ,z))))]
         [(y)
-         (code `(assignv ,(+ rn0 1) (- (r ,rn0) (vec3 ,z ,spacing ,z))))
-         (code `(assignv ,(+ rn0 2) (+ (r ,rn0) (vec3 ,z ,spacing ,z))))]
+         (code `(assignv ,(+ rn0 1) (sub 3 (r ,rn0) (vec3 ,z ,spacing ,z))))
+         (code `(assignv ,(+ rn0 2) (add 3 (r ,rn0) (vec3 ,z ,spacing ,z))))]
         [(z)
-         (code `(assignv ,(+ rn0 1) (- (r ,rn0) (vec3 ,z ,z ,spacing))))
-         (code `(assignv ,(+ rn0 2) (+ (r ,rn0) (vec3 ,z ,z ,spacing))))]))
+         (code `(assignv ,(+ rn0 1) (sub 3 (r ,rn0) (vec3 ,z ,z ,spacing))))
+         (code `(assignv ,(+ rn0 2) (add 3 (r ,rn0) (vec3 ,z ,z ,spacing))))]))
 
     (let*-values ([(dc rn3) (generate (first children) rn0 (+ rn0 3))]
                   [(dm rn4) (generate (first children) (+ rn0 1) rn3)]
@@ -413,7 +420,7 @@
 (define (generate-half node query rn)
   (let ([normal (first (node-atts node))]
         [dist   (second (node-atts node))])
-    (code `(assigns ,rn (- (dot (r ,query) (cv ,normal)) (cs ,dist))))
+    (code `(assigns ,rn (sub 1 (dot 3 (r ,query) (cv ,normal)) (cs ,dist))))
     (values rn (+ rn 1))))
 
 (define (generate-box node query rn)
@@ -457,26 +464,28 @@
 ; Generates a GLSL expression from an expression-level intermediate.
 (define (glsl-expr form)
   (match form
-    [(list '- a b) (bin "-" (glsl-expr a) (glsl-expr b))]
-    [(list '+ a b) (bin "+" (glsl-expr a) (glsl-expr b))]
     [(list 'r n) (string-append "r" (number->string n))]
     [(list 'cv (list x y z)) (glsl-vec3 x y z)]
     [(list 'cv (vec3 x y z)) (glsl-vec3 x y z)]
     [(list 'cq q) (glsl-quat q)]
     [(list 'cs x) (number->string (->fl x))]
-    [(list 'length v) (fn "length" (glsl-expr v))]
-    [(list 'dot a b) (fn "dot" (glsl-expr a) (glsl-expr b))]
+
+    [(list 'sub _ a b) (bin "-" (glsl-expr a) (glsl-expr b))]
+    [(list 'add _ a b) (bin "+" (glsl-expr a) (glsl-expr b))]
+    [(list 'length _ v) (fn "length" (glsl-expr v))]
+    [(list 'dot _ a b) (fn "dot" (glsl-expr a) (glsl-expr b))]
+    [(list 'abs a) (fn "abs" (glsl-expr a))]
+
     [(list 'max a b) (fn "max" (glsl-expr a) (glsl-expr b))]
     [(list 'min a b) (fn "min" (glsl-expr a) (glsl-expr b))]
     [(list 'smin s a b) (fn "smin" (glsl-expr s) (glsl-expr a) (glsl-expr b))]
     [(list 'mod a b) (fn "mod" (glsl-expr a) (glsl-expr b))]
-    [(list 'abs a) (fn "abs" (glsl-expr a))]
     [(list 'qrot q v) (fn "qrot" (glsl-expr q) (glsl-expr v))]
     [(list 'box c p) (fn "dfBox" (glsl-expr c) (glsl-expr p))]
     [(list 'sphere r p) (fn "dfSphere" (glsl-expr r) (glsl-expr p))]
     [(list 'vec3 a b) (fn "vec3" (glsl-expr a) (glsl-expr b))]
     [(list 'vec3 a b c) (fn "vec3" (glsl-expr a) (glsl-expr b) (glsl-expr c))]
-    [(list 'proj v sym) (glsl-proj (glsl-expr v) sym)]
+    [(list 'proj _ v sym) (glsl-proj (glsl-expr v) sym)]
     [_ (error "bad expression passed to glsl-expr: " form)]))
 
 (define (glsl-stmt form)
