@@ -1,11 +1,12 @@
 #lang racket
 
 (require "edsl.rkt")
-(require "spheretrace.rkt")
+;(require "spheretrace.rkt")
+(require "outline.rkt")
 
 (define (scene)
   (intersection
-    (repeat-x 150 (bowl 50 20))
+    (bowl 50 20)
     (rects 400 100 100))
 
   (translate '(0 125 0)
@@ -33,4 +34,9 @@
     (half-sphere radius)
     (translate `[0 ,thickness 0] (half-sphere radius))))
 
-(spheretrace scene)
+;(spheretrace scene)
+(project-outline (current-output-port)
+                 scene
+                 150
+                 150
+                 1/10)
