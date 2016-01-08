@@ -78,6 +78,9 @@
   (body)
   (end-child))
 
+; Creates an explicit union of child geometry.  Explicit unions are rarely
+; necessary.  In most cases, if multiple children are provided where a single
+; child is expected, they are wrapped in a union implicitly.
 (define-syntax-rule (union b bs ...)
   (call-as-union (lambda () b bs ...)))
 
@@ -86,6 +89,8 @@
   (body)
   (end-child))
 
+; Creates a smoothed union of child geometry.  Intersections of the children are
+; altered so that their radius of curvature is not less than 'sm' units.
 (define-syntax-rule (smooth-union sm b bs ...)
   (call-as-smooth-union sm (lambda () b bs ...)))
 
@@ -110,6 +115,7 @@
   (body)
   (end-child))
 
+; Shift child geometry in space.  'v' should be a list of three numbers.
 (define-syntax-rule (translate v b bs ...)
   (call-with-translation v (lambda () b bs ...)))
 

@@ -54,7 +54,6 @@
        (list (node 'sphere (list r) '())))]
     ))
 
-
 ; A canonical union node has exactly two children.  Unions of more than two
 ; children are rewritten into binary trees.
 (define (canon-union n)
@@ -244,7 +243,7 @@
 
 
 ; ----------------------------------------------------------------------
-; Lowering to GLSL pseudo-assembler.
+; Lowering to pseudo-assembler.
 
 (define *statements* (make-parameter '()))
 
