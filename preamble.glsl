@@ -1,6 +1,7 @@
 const float PI = 3.14159265358979323846;
 const float ISOSURFACE = 0.0;
 const vec3 LIGHT = vec3(0, 0, 100);
+const vec4 BACKGROUND = vec4(0.1, 0.1, 0.3, 1);
 
 const float TRUST = 1.0;
 
@@ -129,9 +130,10 @@ void main() {
   // Shorthand for the object-to-eye vector, used for specular reflection.
   vec3 toEye = qrot(orientation, -dir);
 
-  // Initialized with the background color, this will be overwritten if
-  // the current ray hits an object.
-  vec4 color = vec4(0.1, 0.1, 0.3, 1);
+  // Initialized with black to handle the "too many steps" case, this will
+  // be overwritten if the ray either hits a surface, or escapes past the
+  // far clipping plane.
+  vec4 color = vec4(0, 0, 0, 1);
 
   // Rotate the light position into object space.
   vec3 rLight = qrot(orientation, LIGHT);
@@ -149,7 +151,10 @@ void main() {
     // Early-exit the marching process at the far clip plane.  This improves
     // performance significantly when software rendering with Mesa; unclear
     // whether it helps on hardware.
-    if (pos.z < far) break;
+    if (pos.z < far) {
+      color = BACKGROUND;
+      break;
+    }
 
     // Transform the ray's position into object space.
     // TODO: couldn't we just do the marching in object space?  Sure, it
