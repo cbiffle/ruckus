@@ -447,7 +447,7 @@
   (string-append name "(" (string-join args ", ") ")"))
 
 (define (glsl-vec3 x y z)
-  (apply fn "vec3" (map number->string (map ->fl (list x y z)))))
+  (apply fn "vec3" (map number->string (map real->double-flonum (list x y z)))))
 
 (define/match (glsl-quat q)
   [((quat s (vec3 x y z)))
@@ -470,7 +470,7 @@
     [(list 'cv (list x y z)) (glsl-vec3 x y z)]
     [(list 'cv (vec3 x y z)) (glsl-vec3 x y z)]
     [(list 'cq q) (glsl-quat q)]
-    [(list 'cs x) (number->string (->fl x))]
+    [(list 'cs x) (number->string (real->double-flonum x))]
 
     [(list 'sub _ a b) (bin "-" (glsl-expr a) (glsl-expr b))]
     [(list 'add _ a b) (bin "+" (glsl-expr a) (glsl-expr b))]
