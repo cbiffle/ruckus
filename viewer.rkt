@@ -19,12 +19,10 @@
       (struct-copy vec3 p [z (sqrt (1 . - . op-sqr))])
       (vec3-normalize p))))
 
-
-
 (define gl-viewer%
   (class canvas%
     (super-new)
-    (inherit with-gl-context swap-gl-buffers refresh)
+    (inherit with-gl-context swap-gl-buffers)
 
     (init-field draw)
     (init-field (setup void))
@@ -37,6 +35,15 @@
     (define step-limit 64)
     (define modes '(#f))
     (define remaining-modes '(#f))
+    (define refresh-queued #f)
+
+    (define (low-priority-refresh)
+      (unless refresh-queued
+        (queue-callback (lambda ()
+                          (send this refresh)
+                          (set! refresh-queued #f))
+                        #f)
+        (set! refresh-queued #t)))
 
     (define/override (on-size width height)
       (with-gl-context
@@ -92,7 +99,7 @@
                  (let* ([new-v (get-arcball-vector new-x new-y w h)]
                         [rot (quat-rotation-from-to start-v new-v)])
                    (set! active-rotation (quat-rotation-from-to start-v new-v)))
-                 (refresh)))))
+                 (low-priority-refresh)))))
           ((left-up)
            (set! orientation (quat-mul active-rotation orientation))
            (set! active-rotation (quat-identity-rotation))
@@ -101,33 +108,33 @@
 
     (define/override (on-char event)
       (case (send event get-key-code)
-        ((#\+) (set! zoom (* zoom 4/3)) (refresh))
-        ((#\-) (set! zoom (/ zoom 4/3)) (refresh))
+        ((#\+) (set! zoom (* zoom 4/3)) (low-priority-refresh))
+        ((#\-) (set! zoom (/ zoom 4/3)) (low-priority-refresh))
         ((#\[)
          (set! quality (max 1 (- quality 1)))
          (printf "quality now 1/~a~n" quality)
-         (refresh))
+         (low-priority-refresh))
         ((#\])
          (set! quality (+ quality 1))
          (printf "quality now 1/~a~n" quality)
-         (refresh))
+         (low-priority-refresh))
         ((#\{)
          (set! step-limit (max 1 (- step-limit 1)))
          (printf "step-limit now ~a~n" step-limit)
-         (refresh))
+         (low-priority-refresh))
         ((#\})
          (set! step-limit (+ step-limit 1))
          (printf "step-limit now ~a~n" step-limit)
-         (refresh))
+         (low-priority-refresh))
         ((#\ )
          (set! remaining-modes (rest remaining-modes))
          (when (empty? remaining-modes)
            (set! remaining-modes modes))
          (printf "mode now ~a~n" (first remaining-modes))
-         (refresh))
-        ((f5) (set! setup-called #f) (refresh))
-        ((wheel-up) (set! zoom (* zoom 9/8)) (refresh))
-        ((wheel-down) (set! zoom (/ zoom 9/8)) (refresh))))
+         (low-priority-refresh))
+        ((f5) (set! setup-called #f) (low-priority-refresh))
+        ((wheel-up) (set! zoom (* zoom 9/8)) (low-priority-refresh))
+        ((wheel-down) (set! zoom (/ zoom 9/8)) (low-priority-refresh))))
   ))
 
 
