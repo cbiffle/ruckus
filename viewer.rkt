@@ -66,7 +66,6 @@
             (set! modes (setup))
             (set! remaining-modes modes)
             (set! setup-called #t))
-          (send this get-width)
           (glClearColor 0.0 0.0 0.3 0.0) ; darkish blue
           (glClear (bitwise-ior GL_COLOR_BUFFER_BIT GL_DEPTH_BUFFER_BIT))
           (glPushMatrix)
