@@ -19,8 +19,8 @@
     (fprintf out "<svg viewBox=\"~a ~a ~a ~a\" xmlns=\"~a\" version=\"1.1\">~n"
              (- half-width)
              (- half-height)
-             half-width
-             half-height
+             width
+             height
              "http://www.w3.org/2000/svg")
     (fprintf out "<g stroke=\"black\" stroke-width=\"0.1\">~n")
     (let ([f (node->function (call-with-edsl-root gen))])
