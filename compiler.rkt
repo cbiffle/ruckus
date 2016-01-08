@@ -124,10 +124,10 @@
       [(1) (case (node-type (first children))
              [(inverse) (node-children (first children))]
              [else (list n)])]
-      [else (struct-copy node n
-                         [children (canon-union (node 'union
-                                                      '()
-                                                      children))])])))
+      [else (list (struct-copy node n
+                               [children (canon-union (node 'union
+                                                            '()
+                                                            children))]))])))
 
 ; A canonical translate has a single child.  Translations of more than one
 ; child are assumed to be unions of the children and rewritten thus.
@@ -149,10 +149,10 @@
              [else (if (equal? '(0 0 0) (first (node-atts n)))
                      (list (first children))
                      (list n))])]
-      [else (struct-copy node n
-                         [children (canon-union (node 'union
-                                                      '()
-                                                      children))])])))
+      [else (list (struct-copy node n
+                               [children (canon-union (node 'union
+                                                            '()
+                                                            children))]))])))
 
 ; A canonical isolevel shift has a single child.  Isolevel shifts of more than
 ; one child are assumed to be unions of the children and rewritten thus.
@@ -174,10 +174,10 @@
              [else (if (zero? (first (node-atts n)))
                      (list (first children))
                      (list n))])]
-      [else (struct-copy node n
-                         [children (canon-union (node 'union
-                                                      '()
-                                                      children))])])))
+      [else (list (struct-copy node n
+                               [children (canon-union (node 'union
+                                                            '()
+                                                            children))]))])))
 
 ; A canonical extrude has a single child.  Extrusions of more than one
 ; child are assumed to be unions of the children and rewritten thus.
@@ -198,10 +198,10 @@
     (case (length children)
       [(0) '()]
       [(1) (list n)]
-      [else (struct-copy node n
-                         [children (canon-union (node 'union
-                                                      '()
-                                                      children))])])))
+      [else (list (struct-copy node n
+                               [children (canon-union (node 'union
+                                                            '()
+                                                            children))]))])))
 
 ; A canonical mirror has a single child.  Mirrors of more than one
 ; child are assumed to be unions of the children and rewritten thus.
@@ -216,10 +216,10 @@
     (case (length children)
       [(0) '()]
       [(1) (list n)]
-      [else (struct-copy node n
-                         [children (canon-union (node 'union
-                                                      '()
-                                                      children))])])))
+      [else (list (struct-copy node n
+                               [children (canon-union (node 'union
+                                                            '()
+                                                            children))]))])))
 
 ; A canonical rotate has a single child.  Rotations of more than one child are
 ; assumed to be unions of the children and rewritten thus.
@@ -237,10 +237,10 @@
       [(1) (case (node-type (first children))
              [(rotate) (list (combine n (first children)))]
              [else (list n)])]
-      [else (struct-copy node n
-                         [children (canon-union (node 'union
-                                                      '()
-                                                      children))])])))
+      [else (list (struct-copy node n
+                               [children (canon-union (node 'union
+                                                            '()
+                                                            children))]))])))
 
 
 ; ----------------------------------------------------------------------
