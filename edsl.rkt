@@ -179,7 +179,7 @@
   (add-child 'half p d))
 
 (define (rects sx sy sz)
-  (add-child 'box (vec3 (/ sx 2) (/ sy 2) (/ sz 2))))
+  (add-child 'box (vec3 sx sy sz)))
 
 (define (cube s)
   (rects s s s))

@@ -337,15 +337,16 @@
                              (proj 3 (r ,query) y)
                              (cs 0))))
 
-  (let*-values ([(children) (node-children node)]
-                [(th) (first (node-atts node))]
-                [(rn1) (+ rn0 1)]
-                [(d rn2) (generate (first children)
-                                   rn0
-                                   rn1)])
-    (code `(assigns ,rn2 (max (r ,d)
-                              (sub 1 (abs (proj 3 (r ,query) z)) (cs ,th)))))
-    (values rn2 (+ rn2 1))))
+  (let ([children (node-children node)]
+        [th-sym (/ (first (node-atts node)) 2)]
+        [rn1 (+ rn0 1)])
+    (let-values ([(d rn2) (generate (first children)
+                                    rn0
+                                    rn1)])
+      (code `(assigns ,rn2 (max (r ,d)
+                                (sub 1 (abs (proj 3 (r ,query) z))
+                                     (cs ,th-sym)))))
+      (values rn2 (+ rn2 1)))))
 
 (define (generate-mirror node query rn0)
   (unless (= 1 (length (node-children node)))
@@ -425,7 +426,7 @@
     (values rn (+ rn 1))))
 
 (define (generate-box node query rn)
-  (let ([corner (first (node-atts node))])
+  (let ([corner (vec3-div (first (node-atts node)) 2)])
     (code `(assigns ,rn (box (cv ,corner) (r ,query))))
     (values rn (+ rn 1))))
 
