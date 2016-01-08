@@ -41,9 +41,9 @@
 
 (define (load-program port)
   (when program
-    (printf "Deleting program ~a~n" program)
-    (glDeleteProgram program)
-    (set! program #f))
+    (delete-program)
+    (set! program #f)
+    (set! delete-program void))
 
   (let* ([program (glCreateProgram)]
          [shader (glCreateShader GL_FRAGMENT_SHADER)]
@@ -55,14 +55,24 @@
     (glAttachShader program shader)
     (glLinkProgram program)
     (printf "Shader program ~a compiled and linked.~n" program)
-    program))
+    (values
+      program
+      (lambda ()
+        (printf "Detaching shader ~a from program ~a~n" shader program)
+        (glDetachShader program shader)
+        (printf "Marking shader ~a for deletion.~n" shader)
+        (glDeleteShader shader)
+        (printf "Marking program ~a for deletion.~n" program)
+        (glDeleteProgram program)))))
 
 (define program #f)
+(define delete-program void)
 
 (define (setup)
   (if (or (gl-version-at-least? '(2 0))
           (gl-has-extension? 'GL_ARB_shader_objects))
-    (set! program (call-with-input-file "preamble.glsl" load-program))
+    (set!-values (program delete-program)
+                 (call-with-input-file "preamble.glsl" load-program))
     (printf "This OpenGL does not support shaders, you'll get a plain white rectangle.~%"))
   '(shaded complexity distance))
 
