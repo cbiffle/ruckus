@@ -8,9 +8,9 @@
 (provide view)
 
 (define (get-arcball-vector x y w h)
-  (let* ([dim (min w h)]
-         [hw (w . / . 2)]
+  (let* ([hw (w . / . 2)]
          [hh (h . / . 2)]
+         [dim (min hw hh)]
          [p (vec3 ((x . - . hw) . / . dim)
                   (- ((y . - . hh) . / . dim))
                   0)]
