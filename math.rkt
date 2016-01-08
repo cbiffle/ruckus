@@ -4,6 +4,8 @@
 ; supporting my CAD project.
 
 (provide
+  real-mod
+
   (struct-out vec3)
   vec3-length
   vec3-normalize
@@ -24,6 +26,11 @@
   quat-rotate
   quat-rotation-from-to
   quat-rotation-around)
+
+(define (real-mod n m)
+  (when (not (positive? m))
+    (error "modulus must be positive"))
+  (n . - . ((truncate (n . / . m)) . * . m)))
 
 ; ------------------------------------------------------------------------------
 ; 3-vectors

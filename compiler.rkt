@@ -530,7 +530,7 @@
     [(list 'max a b) `(max ,(rkt-expr a) ,(rkt-expr b))]
     [(list 'min a b) `(min ,(rkt-expr a) ,(rkt-expr b))]
     [(list 'smin s a b) `(smooth-min ,(rkt-expr s) ,(rkt-expr a) ,(rkt-expr b))]
-    [(list 'mod a b) `(remainder ,(rkt-expr a) ,(rkt-expr b))]
+    [(list 'mod a b) `(real-mod ,(rkt-expr a) ,(rkt-expr b))]
     [(list 'qrot q v) `(quat-rotate ,(rkt-expr q) ,(rkt-expr v))]
 
     [(list 'box c p) `(df-box ,(rkt-expr c) ,(rkt-expr p))]
