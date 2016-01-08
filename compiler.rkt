@@ -499,8 +499,9 @@
 (define (node->glsl n)
   (let-values ([(r s) (generate-statements n)])
     (append (list "float distanceField(vec3 r0) {")
-            (map glsl-stmt s)
-            (list (string-append "return r" (number->string r) ";"))
+            (map (lambda (st) (string-append "  " (glsl-stmt st)))
+                 s)
+            (list (string-append "  return r" (number->string r) ";"))
             (list "}")
             )))
 
