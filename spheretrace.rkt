@@ -7,13 +7,15 @@
 (require "edsl.rkt")
 (require "compiler.rkt")
 (require "math.rkt")
+(require "loader.rkt")
 
-(provide spheretrace)
+(define design-path #f)
 
-(define distance-field-source #f)
-
-(define (generate-shader-text gen)
-  (set! distance-field-source (node->glsl (call-with-edsl-root gen))))
+(define (reload path)
+  (let ([gen (load-frep path)])
+    (unless (procedure? gen)
+      (error "Design at" path "binds 'design', but not to a procedure."))
+    (node->glsl (call-with-edsl-root gen))))
 
 (define (get-shader-parameter shader pname)
   (let ([v (s32vector 0)])
@@ -23,7 +25,7 @@
 (define (load-program-source shader port)
   (let* ([preamble (for/vector ([line (in-lines port)])
                      (string-append line "\n"))]
-         [gen (for/vector ([line (in-list distance-field-source)])
+         [gen (for/vector ([line (in-list (reload design-path))])
                 (string-append line "\n"))]
          [lines (vector-append preamble gen)]
          (sizes (for/list ((line (in-vector lines))) (string-length line)))
@@ -38,6 +40,11 @@
       (bytes->string/utf-8 info-log #\? 0 actual-length))))
 
 (define (load-program port)
+  (when program
+    (printf "Deleting program ~a~n" program)
+    (glDeleteProgram program)
+    (set! program #f))
+
   (let* ([program (glCreateProgram)]
          [shader (glCreateShader GL_FRAGMENT_SHADER)]
          [lines (load-program-source shader port)])
@@ -47,6 +54,7 @@
       (error 'load-program "error compiling: ~a" (get-shader-info-log shader)))
     (glAttachShader program shader)
     (glLinkProgram program)
+    (printf "Shader program ~a compiled and linked.~n" program)
     program))
 
 (define program #f)
@@ -121,6 +129,11 @@
   (when program
     (glUseProgram 0)))
 
-(define (spheretrace gen)
-  (generate-shader-text gen)
+(define (spheretrace path)
+  (set! design-path path)
   (view draw setup))
+
+(command-line
+  #:program "spheretrace"
+  #:args (path)
+  (spheretrace path))

@@ -4,8 +4,7 @@
 (require "edsl.rkt")
 (require "compiler.rkt")
 (require "math.rkt")
-
-(provide project-outline)
+(require "loader.rkt")
 
 (define (project-outline out gen width height granule)
   (define (pd d)
@@ -114,3 +113,29 @@
       [(14) (list (list (span a b) 0
                         0 (span a d)))]
       [(15) '()])))
+
+(define design-width 100)
+(define design-height 100)
+(define design-quantum 1)
+
+(define (outline path)
+  (project-outline (current-output-port)
+                   (load-frep path)
+                   design-width
+                   design-height
+                   design-quantum))
+
+(command-line
+  #:program "outline"
+  #:once-each
+  [("-d" "--dimension") w h
+                        "Clip to <w> x <h> rectangle around the origin."
+                        (begin
+                          (set! design-width (string->number w))
+                          (set! design-height (string->number h)))]
+  [("-q" "--quantum") q
+                      "Quantize space into <q>-sized chunks."
+                      (set! design-quantum (string->number q))]
+  #:args (path)
+  (outline path))
+

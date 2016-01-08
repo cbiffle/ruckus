@@ -125,6 +125,7 @@
            (set! remaining-modes modes))
          (printf "mode now ~a~n" (first remaining-modes))
          (refresh))
+        ((f5) (set! setup-called #f) (refresh))
         ((wheel-up) (set! zoom (* zoom 9/8)) (refresh))
         ((wheel-down) (set! zoom (/ zoom 9/8)) (refresh))))
   ))
