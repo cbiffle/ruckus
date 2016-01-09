@@ -1,6 +1,4 @@
-#lang racket
-
-(require "edsl.rkt")
-
 (define (design)
-  (sphere 100))
+  (sphere 200)
+  (translate '[200 0 0] (sphere 100))
+  )
