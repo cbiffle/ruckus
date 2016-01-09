@@ -1,0 +1,121 @@
+Implicit representations make certain things easier, like warps and
+hypertextures/displacements.  But these can corrupt the distance field gradient
+invariant.
+
+This is bad for algorithms that use the gradient invariant to skip steps.  In
+particular, raymarching.
+
+What if the distance field evaluator knew about this?    It could indicate, for
+a given sample, whether the sample was in a distance field or just in a density
+field defining an isosurface.  The algorithms operating on the field could
+'shift gears' accordingly, e.g. switch to fixed-step ray advancement.
+
+Example: we can analytically compute the correct distance field for a sphere.
+If we modulate the density with a sinusoid, the distance field gradient is no
+longer guaranteed to have magnitude 1.  What do we still know?
+
+- Given the range of the sinusoid, we can correctly derive a *lower-bound*
+  distance function for points strictly outside of the deformed sphere's
+  influence by simply enlarging the sphere by the positive range.
+
+- Within the influence of the sinusoid (in a shell around the original sphere),
+  we still have a valid *density* field describing an isosurface, but not a
+  *distance* field.  This is where we must slow down.
+
+-----------
+
+The Lipschitz Condition imposes a limit on the absolute value of the derivative
+of a function.  This is the invariant required for spheretracing, from the
+original paper.
+
+The limit is the Lipschitz constant, written as lambda in the papers.  I'll
+write it as L.
+
+Because of the limit on the derivative, the value of the field at some point P
+is a lower bound on the distance of P from the nearest isosurface.  Since the
+field value cannot increase by more than L per unit of distance from the
+isosurface (zero), the field value `F(P)` at distance `d` can be no more than
+`dL`, so the true distance is not less than `F(P)/L`.
+
+For the common case where L=1, this all reduces with identities.  The field
+value is a direct bound on geometric distance.
+
+So the goal, if we're to spheretrace, is to preserve *some* Lipschitz constant.
+I personally like L=1.
+
+Transformations that preserve the Lipschitz constant are "isometries."
+Translation, rotation, mirroring.  No further consideration is needed here.
+
+Uniform scaling across all axes alters the Lipschitz constant accordingly.
+Scaling by s=2x decompresses space and reduces the Lipschitz constant, which is
+actually fine -- the field is still Lipschitz-continuous at the old L.  Scaling
+by s=1/2, on the other hand, compresses space and makes the field steeper and
+may blow L.
+
+In either case, the slope of the field can be corrected by multiplying its
+output by s.  (Where s is the inverse of the multiplier used on the query
+point.)
+
+
+What about scaling by a different factor along each axis?  Assuming that no
+factor is zero or infinite.
+
+We need to correct the derivative for the smallest scale factor, and since it's
+a scalar field, we can't apply different corrections in different directions.
+So we probably just have to scale the distance field result by `min(sx, sy,
+sz)`.
+
+
+Okay.  Hart sez that any linear transformation can have its Lipschitz corrected.
+Quote:
+
+    The Lipschitz constant of an arbitrary linear
+    transformation is found by the power method,
+    which iteratively finds the largest eigenvalue of
+    a matrix.
+
+He cites:
+
+    Gerald CF, Wheatley PO (1989) Applied numerical analysis.
+    Addison-Wesley, Reading, Mass
+
+which looks a lot like a book.  Boo.
+
+Should be able to check that assertion against the known solutions for
+transformations and uniform scale.
+
+This assertion is interesting and deserves further study!
+
+
+Tapering, e.g. a Z-axis-dependent scale in XY.  Hart asserts that the Lipschitz
+constant is given by the ratio of the tightest taper, which implies that there
+must *be* a tightest taper -- naive tapers would narrow to a singularity and
+beyond.
+
+Interesting, it's not clear that the taper ratio function needs to be linear.
+One could use a complex taper equation to e.g. lathe a cylinder into a Staunton
+pawn.
+
+As long as one could find its minimum.
+
+So a tapering function like a clamped linear would be easiest.
+
+
+
+Twists.  The effect on the derivative increases the farther one goes from the
+twist axis.  So the Lipschitz constant of a twist function can't be
+characterized -- it's effectively infinite.
+
+Hart works around this by considering only a limited domain.  If we restrict the
+twist operation to the unit cylinder, we can estimate its maximum displacement.
+
+Presumably we could take something interesting, squish it into the unit
+cylinder, twist it, and then unsquish?
+
+Or, more generally: if we can determine a bounding cylinder for the twisted
+geometry, we could re-derive the Lipschitz constant for the twist.  Not that I'm
+entirely confident how to do this; the equation is presented without comment in
+Hart's paper.
+
+
+

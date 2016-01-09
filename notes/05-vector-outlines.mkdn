@@ -1,0 +1,113 @@
+Okay, so, I can describe a basic 2D part, extrude it for fit testing, etc.
+
+What I *cannot* currently do is export its outline in a format suitable for
+laser-cutting.  (Or for 3D, a format like STL.)
+
+What would this take?
+
+Algorithmically, I am familiar with -- but have never implemented -- Marching
+Squares.  At high resolution it seems like it can produce good results.  (Though
+at high enough resolution, an occupancy grid produces good results.)  I'm
+concerned about the large number of short line segments, and I wonder if a
+post-processing pass would be needed to merge smooth segments together.
+(Because certain machine control software I've dealt with has a hard time with
+lots of short segments.  But maybe that machine was dumb.)
+
+Well.  That's probably best postponed until I actually have the problem, i.e.
+until I get an outline exported.
+
+
+Marching Squares
+================
+
+Let's assume for the moment that I can compile the distance field evaluator to
+run on the CPU (which I cannot, right now, but it should be straightforward).
+
+What's the algorithm look like?
+
+Divide space into square quanta of a certain size.  This will affect the
+resolution of the output.
+
+For each quantum, the output will be either:
+- No line segments, if the square is completely above or below the isocontour.
+- One line segment, if the square crosses the isocontour once.
+- Two line segments, if it crosses twice.
+
+Assume that we have a channel or stream to which we can feed line segments.
+Then we have a loop (parallel or not) that handles each quantum and emits 0-2
+line segments.
+
+The output for each quantum is chosen by sampling 4-5 points of the field.  (4
+normally, 5 to disambiguate saddles.)  The samples are thresholded and converted
+into an index into a lookup table.
+
+(Aside: each corner needs only be sampled once, so we could sample once per
+quantum into an intermediate buffer if we have enough RAM.  We cannot
+pre-threshold, however, because we need the exact levels in the next step.)
+
+The lookup table tells us, for each endpoint of up to two lines, which side of
+the square it falls on.  We use this information to linearly interpolate the
+unknown coordinate along that side of the square.  This is equivalent to finding
+the root (X intersection) of a linear equation.
+
+The lookup table needs a provision for omitting a line.
+
+For lines not omitted, we produce them on the output stream.  (Likely: as X/Y of
+the square, followed by endpoint locations expressed on a 0-1 scale, to maintain
+invariant precision across the plane.)
+
+The output at this point is technically correct but practically useless for
+machine control, because the lines appear in (at best) raster order and are not
+connected.  So we need to fix that.
+
+Storing the lines in a data structure that has a 2D locality property would do
+it, e.g. a quadtree.
+
+However, given a line segment, the location of a connecting segment (if present)
+can be predicted by simple adjacency in the quantum grid.  No fuzziness is
+required.  So a structure such as a hashtable, keyed by the integer grid
+coordinates and possibly the direction of exit, could be used to store
+*unpaired* line ends.  As lines find their mates the mated ends would be
+removed, preventing it (with any luck) from expanding into a complete occupancy
+grid.  Besides, it should be very sparse.
+
+
+Hm.
+
+The position of the isolevel at a given square-edge is fixed.  Feels like I
+could use that somehow.  Also feels like a time-memory tradeoff that might not
+be practical.
+
+
+
+
+
+Embarrassingly Parallel Marching Squares (GPU)
+==============================================
+
+Divide space into square quanta of a certain size.  This will affect the
+resolution of the output.
+
+For each quantum, the output will be either:
+- No line segments, if the square is completely above or below the isocontour.
+- One line segment, if the square crosses the isocontour once.
+- Two line segments, if it crosses twice.
+
+The endpoints of both line segments (when present) fall on the borders of the
+square, but are otherwise unconstrained.
+
+I'd like to do this on the GPU, rendering into a texture that can be read back
+out to generate something like G-Code.
+
+- Sample the field at the corners of the square.
+- Threshold the samples, producing four booleans.
+- Convert this into a table index.
+- Use the table index to retrieve (from a texture, if I have to)
+  - For each of two possible segments
+    - Two vec2s giving the start and endpoints on the unit square.
+    - ...stuff.
+
+Hm, not sure how to do this yet.
+
+
+

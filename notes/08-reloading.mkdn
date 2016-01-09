@@ -1,0 +1,7 @@
+
+`dynamic-rerequire` lets modules be reloaded at runtime based on their
+modification dates.
+
+But if I load a design as a module, how do I find its entry point?  Can I
+establish an EDSL environment for its top-level execution?
+

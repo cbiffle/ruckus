@@ -1,0 +1,18 @@
+
+It'd be nice to be able to determine, given a point that is believed to be on
+the surface of an object, *which* object owns the surface.  This would enable
+coloring, different material properties, etc.
+
+It might also be useful to determine, given *any* point, one of the nearest
+objects.  This could be used for e.g. voronoi volume rendering.  Which is mostly
+for fun I think.
+
+Note that, for most distance field evaluations in a raymarcher, the "which
+object" information is irrelevant and is likely to be thrown away.  It is only
+when a surface is found that the information is needed.
+
+Thus it may make sense to generate *two* distance field evaluators, for
+performance reasons: one which returns distance, and one which returns object
+identifiers / properties.
+
+
