@@ -12,6 +12,7 @@
   translate
   rotate
   extrude
+  scale
   iso
 
   mirror-x
@@ -118,6 +119,21 @@
 ; Shift child geometry in space.  'v' should be a list of three numbers.
 (define-syntax-rule (translate v b bs ...)
   (call-with-translation v (lambda () b bs ...)))
+
+(define (call-with-scale v body)
+  (begin-child
+    'scale
+    (if (number? v)
+      (list v v v)
+      v))
+  (body)
+  (end-child))
+
+; Scale child geometry by constant factors.  'v' should either be a list of
+; three numbers, giving the scale factors along each axis, or a single number
+; to be used for all axes.
+(define-syntax-rule (scale v b bs ...)
+  (call-with-scale v (lambda () b bs ...)))
 
 (define (call-with-rotation axis angle body)
   (begin-child 'rotate

@@ -29,6 +29,7 @@
       [(difference) (canon-difference n)]
       [(inverse) (canon-inverse n)]
       [(translate) (canon-translate n)]
+      [(scale) (canon-scale n)]
       [(rotate) (canon-rotate n)]
       [(extrude) (canon-extrude n)]
       [(repeat) (canon-repeat n)]
@@ -153,6 +154,31 @@
                                                             '()
                                                             children))]))])))
 
+; A canonical scale has a single child.  Scalings of more than one child are
+; assumed to be unions of the children and rewritten thus.
+;
+; Immediately nested scalings are flattened by multiplying their factors.
+;
+; Useless scalings (scalings by 1 on all axes) are eliminated.
+(define (canon-scale n)
+  (define (combine n1 n2)
+    (let ([v1 (first (node-atts n1))]
+          [v2 (first (node-atts n2))])
+      (struct-copy node n2 [atts (list (map * v1 v2))])))
+
+  (let ([children (node-children n)])
+    (case (length children)
+      [(0) '()]
+      [(1) (case (node-type (first children))
+             [(scale) (list (combine n (first children)))]
+             [else (if (equal? '(1 1 1) (first (node-atts n)))
+                     (list (first children))
+                     (list n))])]
+      [else (list (struct-copy node n
+                               [children (canon-union (node 'union
+                                                            '()
+                                                            children))]))])))
+
 ; A canonical isolevel shift has a single child.  Isolevel shifts of more than
 ; one child are assumed to be unions of the children and rewritten thus.
 ;
@@ -260,6 +286,7 @@
     [(intersection)  (generate-intersection node query rn)]
     [(inverse) (generate-inverse node query rn)]
     [(translate)  (generate-translate node query rn)]
+    [(scale)  (generate-scale node query rn)]
     [(rotate)  (generate-rotate node query rn)]
     [(extrude) (generate-extrude node query rn)]
     [(mirror) (generate-mirror node query rn)]
@@ -327,6 +354,28 @@
 
   (code `(assignv ,rn (sub 3 (r ,query) (cv ,(first (node-atts node))))))
   (generate (first (node-children node)) rn (+ rn 1)))
+
+(define (generate-scale node query rn)
+  (unless (= 1 (length (node-children node)))
+    (error "non-canonical scale passed to generate"))
+
+  ; Bookkeeping:
+  ; - 'scale' is the 3-list of scale factors ordered by axis.
+  ; - 'scale-inv' is the inverse, by which we multiply the query point.
+  ; - 'correction' is the Lipschitz factor correction that must be applied to
+  ;   the result to maintain L=1 Lipschitz continuity.
+  (let* ([scale (first (node-atts node))]
+         [scale-inv (map (lambda (n) (/ 1 n)) scale)]
+         [correction (apply min scale)])
+    ; Generate the scaled query point.
+    (code `(assignv ,rn (mul 3 (r ,query) (cv ,scale-inv))))
+    ; Evaluate the child's distance field.
+    (let-values ([(d rn2) (generate (first (node-children node))
+                                    rn
+                                    (+ rn 1))])
+      ; Apply Lipschitz correction.
+      (code `(assigns ,rn2 (mul 1 (r ,d) (cs ,correction))))
+      (values rn2 (+ rn2 1)))))
 
 (define (generate-extrude node query rn0)
   (unless (= 1 (length (node-children node)))
@@ -474,6 +523,7 @@
 
     [(list 'sub _ a b) (bin "-" (glsl-expr a) (glsl-expr b))]
     [(list 'add _ a b) (bin "+" (glsl-expr a) (glsl-expr b))]
+    [(list 'mul _ a b) (bin "*" (glsl-expr a) (glsl-expr b))]
     [(list 'length _ v) (fn "length" (glsl-expr v))]
     [(list 'dot _ a b) (fn "dot" (glsl-expr a) (glsl-expr b))]
 
@@ -520,9 +570,11 @@
 
     [(list 'sub 1 a b) `(- ,(rkt-expr a) ,(rkt-expr b))]
     [(list 'add 1 a b) `(+ ,(rkt-expr a) ,(glsl-expr b))]
+    [(list 'mul 1 a b) `(* ,(rkt-expr a) ,(glsl-expr b))]
 
     [(list 'sub 3 a b) `(vec3-sub ,(rkt-expr a) ,(rkt-expr b))]
     [(list 'add 3 a b) `(vec3-add ,(rkt-expr a) ,(rkt-expr b))]
+    [(list 'mul 3 a b) `(vec3-mul ,(rkt-expr a) ,(rkt-expr b))]
     [(list 'length 3 v) `(vec3-length ,(rkt-expr v))]
     [(list 'dot 3 a b) `(vec3-dot ,(rkt-expr a) ,(rkt-expr b))]
 
