@@ -65,7 +65,8 @@
   (arithmetic-shift 1 (integer-length (- x 1))))
 
 (define (sparse-project-outline out gen width height granule)
-  (let* ([s (next-power-of-two (ceiling ((max width height) . / . granule)))]
+  (let* ([s (next-power-of-two
+              (exact-ceiling ((max width height) . / . granule)))]
          [s/2 (s . / . 2)]
          [f (node->function (call-with-edsl-root gen))])
     (fprintf out "<?xml version=\"1.0\" standalone=\"no\"?>~n")
