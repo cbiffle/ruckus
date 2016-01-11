@@ -8,7 +8,28 @@
 
 (struct segment (sx sy ex ey) #:transparent)
 
-(define (project-outline out gen width height granule)
+(define (segment-offset s x y)
+  (segment (+ x (segment-sx s))
+           (+ y (segment-sy s))
+           (+ x (segment-ex s))
+           (+ y (segment-ey s))))
+
+(define (segment-scale s x)
+  (segment (* x (segment-sx s))
+           (* x (segment-sy s))
+           (* x (segment-ex s))
+           (* x (segment-ey s))))
+
+(define (print-segment-as-svg-line out s)
+  (fprintf out
+           "<line x1=\"~a\" y1=\"~a\" x2=\"~a\" y2=\"~a\"/>~n"
+           (real->double-flonum (segment-sx s))
+           (real->double-flonum (segment-sy s))
+           (real->double-flonum (segment-ex s))
+           (real->double-flonum (segment-ey s))))
+
+
+(define (dense-project-outline out gen width height granule)
   (define (pd d)
     (real->double-flonum (* d granule)))
 
@@ -39,6 +60,57 @@
                      )))))
     (fprintf out "</g>~n")
     (fprintf out "</svg>~n")))
+
+(define (next-power-of-two x)
+  (arithmetic-shift 1 (integer-length (- x 1))))
+
+(define (sparse-project-outline out gen width height granule)
+  (let* ([s (next-power-of-two (ceiling ((max width height) . / . granule)))]
+         [s/2 (s . / . 2)]
+         [f (node->function (call-with-edsl-root gen))])
+    (fprintf out "<?xml version=\"1.0\" standalone=\"no\"?>~n")
+    (fprintf out "<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\"~n")
+    (fprintf out "  \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">~n")
+    (let ([vb-left/top (* granule (- s/2))]
+          [vb-width/height (* granule s)])
+      (fprintf out
+               "<svg viewBox=\"~a ~a ~a ~a\" xmlns=\"~a\" version=\"1.1\">~n"
+               vb-left/top
+               vb-left/top
+               vb-width/height
+               vb-width/height
+               "http://www.w3.org/2000/svg"))
+    (fprintf out "<g stroke=\"black\" stroke-width=\"0.1\">~n")
+    (sparse-march f
+                  (- s/2)
+                  (- s/2)
+                  s
+                  granule
+                  (lambda (seg) (print-segment-as-svg-line out seg)))
+    (fprintf out "</g>~n")
+    (fprintf out "</svg>~n")
+    ))
+
+(define (sparse-march f x y s q out)
+  (let* ([s/2 (s . / . 2)]
+         ; Distance from sample point to corner in q units
+         [dist-to-corner (sqrt (+ (sqr s/2) (sqr s/2)))]
+         ; Distance from sample point to nearest surface, also in q units.
+         ; Since 'f' is natively in world units we have to adjust.
+         [dist-to-surface (/ (f (vec3 (* q (+ x s/2))
+                                      (* q (+ y s/2))
+                                      0))
+                             q)])
+    (when ((abs dist-to-surface) . <= . dist-to-corner)
+      (if (= s 1)
+        (for ([seg (in-list (marching-squares f (* q x) (* q y) q))])
+          (out (segment-scale (segment-offset seg x y) q)))
+        (begin
+          (sparse-march f x y s/2 q out)
+          (sparse-march f (+ x s/2) y s/2 q out)
+          (sparse-march f x (+ y s/2) s/2 q out)
+          (sparse-march f (+ x s/2) (+ y s/2) s/2 q out))))))
+
 
 (define (marching-squares f x y i)
   (segments f x y i))
@@ -121,7 +193,7 @@
 (define design-quantum 1)
 
 (define (outline path)
-  (project-outline (current-output-port)
+  (sparse-project-outline (current-output-port)
                    (load-frep path)
                    design-width
                    design-height
