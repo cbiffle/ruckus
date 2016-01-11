@@ -23,7 +23,7 @@
 
 (define (design)
   ;(assembly 0)
-  (extrude th
+  (extrude 1000
            (cs/cut-layout))
 )
 
