@@ -6,6 +6,8 @@
 (require "math.rkt")
 (require "loader.rkt")
 
+(struct segment (sx sy ex ey) #:transparent)
+
 (define (project-outline out gen width height granule)
   (define (pd d)
     (real->double-flonum (* d granule)))
@@ -25,16 +27,14 @@
     (let ([f (node->function (call-with-edsl-root gen))])
       (for* ([x (in-range (- half-width) half-width granule)]
              [y (in-range (- half-height) half-height granule)])
-        (for ([s (marching-squares f x y granule)])
-          (match s
-            [(list sx sy ex ey)
-             (fprintf out
-                      "<line x1=\"~a\" y1=\"~a\" x2=\"~a\" y2=\"~a\"/>~n"
-                      (+ x (pd sx))
-                      (+ y (pd sy))
-                      (+ x (pd ex))
-                      (+ y (pd ey))
-                      )]))))
+        (for ([s (in-list (marching-squares f x y granule))])
+          (fprintf out
+                   "<line x1=\"~a\" y1=\"~a\" x2=\"~a\" y2=\"~a\"/>~n"
+                   (+ x (pd (segment-sx s)))
+                   (+ y (pd (segment-sy s)))
+                   (+ x (pd (segment-ex s)))
+                   (+ y (pd (segment-ey s)))
+                   ))))
     (fprintf out "</g>~n")
     (fprintf out "</svg>~n")))
 
@@ -63,55 +63,55 @@
          [code (corner-code a b c d)])
     (case code
       [(0) '()]
-      [(1) (list (list 0 (span a d)
-                       (span a b) 0))]
-      [(2) (list (list (span a b) 0
-                       1 (span b c)))]
-      [(3) (list (list 0 (span a d)
-                       1 (span b c)))]
-      [(4) (list (list 1 (span b c)
-                       (span d c) 1))]
+      [(1) (list (segment 0 (span a d)
+                          (span a b) 0))]
+      [(2) (list (segment (span a b) 0
+                          1 (span b c)))]
+      [(3) (list (segment 0 (span a d)
+                          1 (span b c)))]
+      [(4) (list (segment 1 (span b c)
+                          (span d c) 1))]
       [(5)
        (let ([e (f (vec3 (+ x (/ i 2)) (+ y (/ i 2)) 0))])
          (if (<= e 0)
-           (list (list 0 (span a d)
-                       (span d c) 1)
-                 (list 1 (span b c)
-                       (span a b) 0))
-           (list (list 0 (span a d)
-                       (span a b) 0)
-                 (list 1 (span b c)
-                       (span d c) 1))))]
+           (list (segment 0 (span a d)
+                          (span d c) 1)
+                 (segment 1 (span b c)
+                          (span a b) 0))
+           (list (segment 0 (span a d)
+                          (span a b) 0)
+                 (segment 1 (span b c)
+                          (span d c) 1))))]
 
-      [(6) (list (list (span a b) 0
-                       (span d c) 1))]
-      [(7) (list (list 0 (span a d)
-                       (span d c) 1))]
-      [(8) (list (list (span d c) 1
-                       0 (span a d)))]
-      [(9) (list (list (span d c) 1
-                       (span a b) 0))]
+      [(6) (list (segment (span a b) 0
+                          (span d c) 1))]
+      [(7) (list (segment 0 (span a d)
+                          (span d c) 1))]
+      [(8) (list (segment (span d c) 1
+                          0 (span a d)))]
+      [(9) (list (segment (span d c) 1
+                          (span a b) 0))]
 
       [(10)
        (let ([e (f (vec3 (+ x (/ i 2)) (+ y (/ i 2)) 0))])
          (if (<= e 0)
-           (list (list (span a b) 0
-                       0 (span a d))
-                 (list (span d c) 1
-                       1 (span b c)))
-           (list (list (span a b) 0
-                       1 (span b c))
-                 (list (span d c) 1
-                       0 (span a d)))))]
+           (list (segment (span a b) 0
+                          0 (span a d))
+                 (segment (span d c) 1
+                          1 (span b c)))
+           (list (segment (span a b) 0
+                          1 (span b c))
+                 (segment (span d c) 1
+                          0 (span a d)))))]
 
-      [(11) (list (list (span d c) 1
-                        1 (span b c)))]
-      [(12) (list (list 1 (span b c)
-                        0 (span a d)))]
-      [(13) (list (list 1 (span b c)
-                        (span a b) 0))]
-      [(14) (list (list (span a b) 0
-                        0 (span a d)))]
+      [(11) (list (segment (span d c) 1
+                           1 (span b c)))]
+      [(12) (list (segment 1 (span b c)
+                           0 (span a d)))]
+      [(13) (list (segment 1 (span b c)
+                           (span a b) 0))]
+      [(14) (list (segment (span a b) 0
+                           0 (span a d)))]
       [(15) '()])))
 
 (define design-width 100)
