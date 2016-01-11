@@ -131,6 +131,17 @@
            (set! remaining-modes modes))
          (printf "mode now ~a~n" (first remaining-modes))
          (low-priority-refresh))
+        ((#\z)
+         (set! orientation (quat-identity-rotation))
+         (low-priority-refresh))
+        ((#\x)
+         (set! orientation
+           (quat-rotation-from-to (vec3 1 0 0) (vec3 0 0 1)))
+         (low-priority-refresh))
+        ((#\y)
+         (set! orientation
+           (quat-rotation-from-to (vec3 0 1 0) (vec3 0 0 1)))
+         (low-priority-refresh))
         ((f5) (set! setup-called #f) (low-priority-refresh))
         ((wheel-up) (set! zoom (* zoom 9/8)) (low-priority-refresh))
         ((wheel-down) (set! zoom (/ zoom 9/8)) (low-priority-refresh))))
