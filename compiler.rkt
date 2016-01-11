@@ -49,7 +49,7 @@
     [(rect)
      (let ([w (first (node-atts n))]
            [h (second (node-atts n))])
-       (list (node 'box (list (vec3 w h 1)) '())))]
+       (list (node 'box (list (vec3 w h (max w h))) '())))]
     [(circle)
      (let ([r (first (node-atts n))])
        (list (node 'sphere (list r) '())))]
