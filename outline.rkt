@@ -13,7 +13,8 @@
     (real->double-flonum (* d granule)))
 
   (let ([half-width (width . / . 2)]
-        [half-height (height . / . 2)])
+        [half-height (height . / . 2)]
+        [diag-granule (granule . * . (sqrt 2))])
     (fprintf out "<?xml version=\"1.0\" standalone=\"no\"?>~n")
     (fprintf out "<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\"~n")
     (fprintf out "  \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">~n")
@@ -27,14 +28,15 @@
     (let ([f (node->function (call-with-edsl-root gen))])
       (for* ([x (in-range (- half-width) half-width granule)]
              [y (in-range (- half-height) half-height granule)])
-        (for ([s (in-list (marching-squares f x y granule))])
-          (fprintf out
-                   "<line x1=\"~a\" y1=\"~a\" x2=\"~a\" y2=\"~a\"/>~n"
-                   (+ x (pd (segment-sx s)))
-                   (+ y (pd (segment-sy s)))
-                   (+ x (pd (segment-ex s)))
-                   (+ y (pd (segment-ey s)))
-                   ))))
+        (unless ((abs (f (vec3 x y 0))) . > . diag-granule)
+          (for ([s (in-list (marching-squares f x y granule))])
+            (fprintf out
+                     "<line x1=\"~a\" y1=\"~a\" x2=\"~a\" y2=\"~a\"/>~n"
+                     (+ x (pd (segment-sx s)))
+                     (+ y (pd (segment-sy s)))
+                     (+ x (pd (segment-ex s)))
+                     (+ y (pd (segment-ey s)))
+                     )))))
     (fprintf out "</g>~n")
     (fprintf out "</svg>~n")))
 
