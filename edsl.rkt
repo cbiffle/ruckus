@@ -67,9 +67,10 @@
   (end-child))
 
 (define (call-with-edsl-root body)
-  (begin-child 'root)
-  (body)
-  (end-root))
+  (parameterize ([*stack* '()])
+    (begin-child 'root)
+    (body)
+    (end-root)))
 
 ; ------------------------------------------------------------------------
 ; Combinators.
