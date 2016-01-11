@@ -44,7 +44,7 @@
   (segments f x y i))
 
 (define (corner-code a b c d)
-  (define (bit v x) (if (<= x 0) v 0))
+  (define (bit v x) (if (< x 0) v 0))
 
   (+ (bit 1 a)
      (bit 2 b)
