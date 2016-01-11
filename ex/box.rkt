@@ -34,20 +34,20 @@
   )
 
 (define (assembly ex)
-  (mirror-z
+  (union
+    (mirror-z
     (translate `[0 0 ,(+ ex (- h-height h-th))]
                (extrude th (cs/base-top))))
-  (mirror-y
-    (translate `[0 ,(+ ex (- h-depth h-th)) 0]
-               (rotate '[1 0 0] 90
-                       (extrude th (cs/far-near)))))
-  (mirror-x
-    (translate `[,(+ ex (- h-width h-th)) 0 0]
-               (rotate '[0 1 0] 90
-                       (extrude th (cs/left-right)))
-                       )
-    )
-  )
+    (mirror-y
+      (translate `[0 ,(+ ex (- h-depth h-th)) 0]
+                 (rotate '[1 0 0] 90
+                         (extrude th (cs/far-near)))))
+    (mirror-x
+      (translate `[,(+ ex (- h-width h-th)) 0 0]
+                 (rotate '[0 1 0] 90
+                         (extrude th (cs/left-right)))
+                 )
+      )))
 
 
 (define (cs/base-top)
