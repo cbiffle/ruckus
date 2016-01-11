@@ -1,25 +1,42 @@
 #lang racket
 
+; Generates a 2D outline of an object's contours at its intersection with the
+; XY plane.  This is useful for e.g. laser-cutting 2D objects.
+; 
+; Output is in SVG.
+;
+; For command-line usage, see the end of this file or run with '--help'.
+
 (require racket/flonum)
 (require "edsl.rkt")
 (require "compiler.rkt")
 (require "math.rkt")
 (require "loader.rkt")
 
+(define (next-power-of-two x)
+  (arithmetic-shift 1 (integer-length (- x 1))))
+
+; ------------------------------------------------------------------------------
+; Line segment representation.  We represent line segments like SVG does:
+; using a start and end point.
+
 (struct segment (sx sy ex ey) #:transparent)
 
+; Offsets a segment by x and y values.
 (define (segment-offset s x y)
   (segment (+ x (segment-sx s))
            (+ y (segment-sy s))
            (+ x (segment-ex s))
            (+ y (segment-ey s))))
 
+; Scales all components of a segment by a ratio.
 (define (segment-scale s x)
   (segment (* x (segment-sx s))
            (* x (segment-sy s))
            (* x (segment-ex s))
            (* x (segment-ey s))))
 
+; Produces a single SVG line segment from a segment structure.
 (define (print-segment-as-svg-line out s)
   (fprintf out
            "<line x1=\"~a\" y1=\"~a\" x2=\"~a\" y2=\"~a\"/>~n"
@@ -29,69 +46,61 @@
            (real->double-flonum (segment-ey s))))
 
 
-(define (dense-project-outline out gen width height granule)
-  (define (pd d)
-    (real->double-flonum (* d granule)))
+; ------------------------------------------------------------------------------
+; Outline projection and generation.
 
-  (let ([half-width (width . / . 2)]
-        [half-height (height . / . 2)]
-        [diag-granule (granule . * . (sqrt 2))])
-    (fprintf out "<?xml version=\"1.0\" standalone=\"no\"?>~n")
-    (fprintf out "<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\"~n")
-    (fprintf out "  \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">~n")
-    (fprintf out "<svg viewBox=\"~a ~a ~a ~a\" xmlns=\"~a\" version=\"1.1\">~n"
-             (- half-width)
-             (- half-height)
-             width
-             height
-             "http://www.w3.org/2000/svg")
-    (fprintf out "<g stroke=\"black\" stroke-width=\"0.1\">~n")
-    (let ([f (node->function (call-with-edsl-root gen))])
-      (for* ([x (in-range (- half-width) half-width granule)]
-             [y (in-range (- half-height) half-height granule)])
-        (unless ((abs (f (vec3 x y 0))) . > . diag-granule)
-          (for ([s (in-list (marching-squares f x y granule))])
-            (fprintf out
-                     "<line x1=\"~a\" y1=\"~a\" x2=\"~a\" y2=\"~a\"/>~n"
-                     (+ x (pd (segment-sx s)))
-                     (+ y (pd (segment-sy s)))
-                     (+ x (pd (segment-ex s)))
-                     (+ y (pd (segment-ey s)))
-                     )))))
-    (fprintf out "</g>~n")
-    (fprintf out "</svg>~n")))
-
-(define (next-power-of-two x)
-  (arithmetic-shift 1 (integer-length (- x 1))))
-
+; Runs 'gen' as an EDSL root.  Evaluates the resulting geometry in the XY plane,
+; focusing on a 'width' x 'height' sized rectangle centered around the origin.
+; Geometry is diced up into 'granule'-sized squares and contours, if present,
+; are emitted to the port 'out' as SVG.
+;
+; (The actual area evaluated will be rounded up to a square power of two, so
+; don't use 'width' and 'height' in an attempt to clip geometry.)
 (define (sparse-project-outline out gen width height granule)
-  (let* ([s (next-power-of-two
-              (exact-ceiling ((max width height) . / . granule)))]
-         [s/2 (s . / . 2)]
+  (let* ([side (next-power-of-two
+                 (exact-ceiling ((max width height) . / . granule)))]
+         [side/2 (side . / . 2)]
          [f (node->function (call-with-edsl-root gen))])
     (fprintf out "<?xml version=\"1.0\" standalone=\"no\"?>~n")
     (fprintf out "<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\"~n")
     (fprintf out "  \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">~n")
-    (let ([vb-left/top (* granule (- s/2))]
-          [vb-width/height (* granule s)])
-      (fprintf out
-               "<svg viewBox=\"~a ~a ~a ~a\" xmlns=\"~a\" version=\"1.1\">~n"
+    (fprintf out "<svg version=\"1.1\"~n")
+    (let ([vb-left/top (real->double-flonum (* granule (- side/2)))]
+          [vb-width/height (real->double-flonum (* granule side))])
+      (fprintf out "  width=\"~amm\" height=\"~amm\"~n"
+               vb-width/height
+               vb-width/height)
+      (fprintf out "  viewBox=\"~a ~a ~a ~a\"~n"
                vb-left/top
                vb-left/top
                vb-width/height
-               vb-width/height
-               "http://www.w3.org/2000/svg"))
+               vb-width/height))
+      (fprintf out "  xmlns=\"~a\">~n"
+               "http://www.w3.org/2000/svg")
     (fprintf out "<g stroke=\"black\" stroke-width=\"0.1\">~n")
     (sparse-march f
-                  (- s/2)
-                  (- s/2)
-                  s
+                  (- side/2)
+                  (- side/2)
+                  side
                   granule
                   (lambda (seg) (print-segment-as-svg-line out seg)))
     (fprintf out "</g>~n")
-    (fprintf out "</svg>~n")
-    ))
+    (fprintf out "</svg>~n")))
 
+; Recursive sparse marching squares algorithm; implementation factor of
+; 'sparse-project-outline', above.
+;
+; Using a quantum (square size) 'q', evaluates the distance field evaluator 'f'
+; at points in the XY plane to discover contours.  Evaluation is limited to the
+; square (measured in quanta) starting at ('x', 'y') and measuring 's' quanta
+; on a side.  Contours are discoered as 'segment' structs; as each is found, the
+; 'out' function is applied to it.
+;
+; This algorithm uses kd-tree-style binary space partitioning to avoid
+; evaluating regions of space containing no contours.
+; 
+; The distance field evaluator 'f' must be Lipschitz continuous at L=1 for this
+; to work correctly.
 (define (sparse-march f x y s q out)
   (let* ([s/2 (s . / . 2)]
          ; Distance from sample point to corner in q units
@@ -104,7 +113,7 @@
                              q)])
     (when ((abs dist-to-surface) . <= . dist-to-corner)
       (if (= s 1)
-        (for ([seg (in-list (marching-squares f (* q x) (* q y) q))])
+        (for ([seg (in-list (marching-square f (* q x) (* q y) q))])
           (out (segment-scale (segment-offset seg x y) q)))
         (begin
           (sparse-march f x y s/2 q out)
@@ -112,10 +121,11 @@
           (sparse-march f x (+ y s/2) s/2 q out)
           (sparse-march f (+ x s/2) (+ y s/2) s/2 q out))))))
 
-
-(define (marching-squares f x y i)
-  (segments f x y i))
-
+; Implementation factor of 'marching-square', below.  Given the evaluated field
+; levels at each of four corners of a square -- starting from the lower left and
+; moving counter-clockwise -- this produces a numeric index to the contour table
+; below.  (It is also, at the time of this writing, the same encoding used in
+; the examples on Wikipedia -- so you can refer to that article.)
 (define (corner-code a b c d)
   (define (bit v x) (if (< x 0) v 0))
 
@@ -124,7 +134,10 @@
      (bit 4 c)
      (bit 8 d)))
 
-(define (segments f x y i)
+; Single-square marching squares algorithm.  Produces zero, one, or two line
+; segments in a list describing the isocontours of distance field evaluator 'f'
+; within the square anchored at 'x' 'y' and measuring 'i' on a side.
+(define (marching-square f x y i)
   ; Given two values, one above zero and one below, find the offset of the
   ; root between them.
   (define (span p q)
@@ -189,16 +202,14 @@
                            0 (span a d)))]
       [(15) '()])))
 
-(define design-width 100)
-(define design-height 100)
-(define design-quantum 1)
 
-(define (outline path)
-  (sparse-project-outline (current-output-port)
-                   (load-frep path)
-                   design-width
-                   design-height
-                   design-quantum))
+; ------------------------------------------------------------------------------
+; Command line driver.
+
+; Knobs controlled from the command line, with default values:
+(define design-width 100)   ; width of rectangle to consider
+(define design-height 100)  ; height of rectangle to consider
+(define design-quantum 1)   ; size of quantum for marching squares
 
 (command-line
   #:program "outline"
@@ -212,5 +223,9 @@
                       "Quantize space into <q>-sized chunks."
                       (set! design-quantum (string->number q))]
   #:args (path)
-  (outline path))
-
+  (begin
+    (sparse-project-outline (current-output-port)
+                            (load-frep path)
+                            design-width
+                            design-height
+                            design-quantum)))
