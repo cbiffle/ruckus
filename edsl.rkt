@@ -3,6 +3,7 @@
 (require racket/flonum)
 (require "model.rkt")
 (require "math.rkt")
+(require "interpolation.rkt")
 
 (provide
   union
@@ -27,6 +28,7 @@
   half-space
   rect
   circle
+  interpolation-surface
 
   call-with-edsl-root)
 
@@ -206,3 +208,37 @@
 
 (define (circle r)
   (add-child 'circle r))
+
+(define (interpolation-surface . args)
+  (define epsilon 1/100)
+  (define (syntax->constraints s)
+    (match s
+      ; A vector value represents a single, zero-valued constraint.
+      [(vec3 _ _ _) (list (cons s 0))]
+
+      ; Two-lists of vectors become triples of constraints along the normal.
+      [(list (vec3 _ _ _) (vec3 _ _ _))
+       (let ([surf (first s)]
+             [norm (vec3-normalize (second s))])
+         (list
+           (cons surf 0)
+           (cons (vec3-add surf (vec3-mul norm epsilon)) epsilon)
+           (cons (vec3-sub surf (vec3-mul norm epsilon)) (- epsilon))))]
+
+      ; Allow punning of three-lists for vec3s.
+      [(list (? number? x)
+             (? number? y)
+             (? number? z))
+       (syntax->constraints (vec3 x y z))]
+      [(list (list (? number? vx)
+                   (? number? vy)
+                   (? number? vz))
+             (list (? number? nx)
+                   (? number? ny)
+                   (? number? nz)))
+       (syntax->constraints (list (vec3 vx vy vz) (vec3 nx ny nz)))]
+      [else (error "Bad form as argument to interpolation-surface:" s)]))
+
+  (let* ([cs (apply append (map syntax->constraints args))]
+         [solution (solve-interpolated-surface-system cs)])
+    (add-child 'interpolation-surface solution)))
