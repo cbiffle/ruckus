@@ -34,7 +34,7 @@
       [(extrude) (canon-extrude n)]
       [(repeat) (canon-repeat n)]
       [(mirror) (canon-mirror n)]
-      [(sphere half box) (list n)]
+      [(sphere half box interpolation-surface) (list n)]
       [(rect circle) (canon-2d n)]
       [else (error "unknown node type in canonicalize: " (node-type n))])))
 
@@ -281,6 +281,7 @@
     [(sphere) (generate-sphere node query rn)]
     [(half)   (generate-half node query rn)]
     [(box)   (generate-box node query rn)]
+    [(interpolation-surface) (generate-interpolation-surface node query rn)]
     [(union root)  (generate-union node query rn)]
     [(smooth-union)  (generate-smooth-union node query rn)]
     [(intersection)  (generate-intersection node query rn)]
@@ -477,6 +478,22 @@
 (define (generate-box node query rn)
   (let ([corner (vec3-div (first (node-atts node)) 2)])
     (code `(assigns ,rn (box (cv ,corner) (r ,query))))
+    (values rn (+ rn 1))))
+
+(define (generate-interpolation-surface node query rn)
+  (define (sum-of-products solution)
+    (for/fold ([expr #f])
+              ([c (in-list solution)]
+              #:when (not (zero? (cdr c))))
+      (let ([prod `(mul 1
+                        (cs ,(cdr c))
+                        (length 3 (sub 3 (r ,query) (cv ,(car c)))))])
+        (if expr
+          `(add 1 ,expr ,prod)
+          prod))))
+
+  (let ([solution (first (node-atts node))])
+    (code `(assigns ,rn ,(sum-of-products solution)))
     (values rn (+ rn 1))))
 
 (define (generate-statements node)
