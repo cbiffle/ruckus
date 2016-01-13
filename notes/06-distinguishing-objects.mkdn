@@ -15,4 +15,36 @@ Thus it may make sense to generate *two* distance field evaluators, for
 performance reasons: one which returns distance, and one which returns object
 identifiers / properties.
 
+Though it'd likely need to return distance too.  Imagine that we return
+(distance, ID) pairs from the leaf primitives.  How do the CSG operations work?
+
+Union:
+
+    vec2 did1 = object1(q);
+    vec2 did2 = object2(q);
+    return (did1.x < did2.x) ? did1 : did2;
+
+Intersection:
+
+    vec2 did1 = object1(q);
+    vec2 did2 = object2(q);
+    return (did1.x > did2.x) ? did1 : did2;
+
+Hm.  So in general, we apply the conditioning and/or selection logic to the
+distance component as always, but carry the corresponding vector along with it.
+Doesn't really matter whether it's a vec2 or a big matrix.  Though of course
+smaller is probably cheaper.
+
+
+So once we *have* an OID, what do we do with it?
+
+Well, we could store colors in a 1D texture, indexed by OID.
+
+We could also store Phong material properties in the same way.
+
+We could add a second render target where each pixel holds an OID.  The CPU
+could then look up in that framebuffer to figure out which object is under a
+given location (e.g. the mouse cursor).
+
+
 
