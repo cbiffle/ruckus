@@ -569,8 +569,8 @@
     [(list 'cs x) x]
 
     [(list 'sub 1 a b) `(- ,(rkt-expr a) ,(rkt-expr b))]
-    [(list 'add 1 a b) `(+ ,(rkt-expr a) ,(glsl-expr b))]
-    [(list 'mul 1 a b) `(* ,(rkt-expr a) ,(glsl-expr b))]
+    [(list 'add 1 a b) `(+ ,(rkt-expr a) ,(rkt-expr b))]
+    [(list 'mul 1 a b) `(* ,(rkt-expr a) ,(rkt-expr b))]
 
     [(list 'sub 3 a b) `(vec3-sub ,(rkt-expr a) ,(rkt-expr b))]
     [(list 'add 3 a b) `(vec3-add ,(rkt-expr a) ,(rkt-expr b))]
