@@ -127,7 +127,7 @@
 ; below.  (It is also, at the time of this writing, the same encoding used in
 ; the examples on Wikipedia -- so you can refer to that article.)
 (define (corner-code a b c d)
-  (define (bit v x) (if (< x 0) v 0))
+  (define (bit v x) (if (negative? x) v 0))
 
   (+ (bit 1 a)
      (bit 2 b)
@@ -161,7 +161,7 @@
                           (span d c) 1))]
       [(5)
        (let ([e (f (vec3 (+ x (/ i 2)) (+ y (/ i 2)) 0))])
-         (if (<= e 0)
+         (if (negative? e)
            (list (segment 0 (span a d)
                           (span d c) 1)
                  (segment 1 (span b c)
@@ -182,7 +182,7 @@
 
       [(10)
        (let ([e (f (vec3 (+ x (/ i 2)) (+ y (/ i 2)) 0))])
-         (if (<= e 0)
+         (if (negative? e)
            (list (segment (span a b) 0
                           0 (span a d))
                  (segment (span d c) 1
