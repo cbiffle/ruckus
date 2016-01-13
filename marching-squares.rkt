@@ -48,6 +48,11 @@
            (* x (segment-ex s))
            (* x (segment-ey s))))
 
+(define (segment-reverse s)
+  (segment (segment-ex s)
+           (segment-ey s)
+           (segment-sx s)
+           (segment-sy s)))
 
 ; ------------------------------------------------------------------------------
 ; Processing a single square using predetermined field values.  The location of
@@ -76,7 +81,10 @@
 ; Generates zero, one, or two contours for the square described by the five
 ; sample points.
 (define (contours-for-square a b c d e out-f)
-  (case (corner-code a b c d)
+  (contours-for-square-impl a b c d e (corner-code a b c d) out-f))
+
+(define (contours-for-square-impl a b c d e cc out-f)
+  (case cc
     [(0) void]
     [(1) (out-f (segment 0 (span a d)
                          (span a b) 0))]
@@ -103,33 +111,8 @@
                          (span d c) 1))]
     [(7) (out-f (segment 0 (span a d)
                          (span d c) 1))]
-    [(8) (out-f (segment (span d c) 1
-                         0 (span a d)))]
-    [(9) (out-f (segment (span d c) 1
-                         (span a b) 0))]
-
-    [(10)
-     (if (occupied? e)
-       (begin
-         (out-f (segment (span a b) 0
-                         0 (span a d)))
-         (out-f (segment (span d c) 1
-                         1 (span b c))))
-       (begin ; not occupied
-         (out-f (segment (span a b) 0
-                         1 (span b c)))
-         (out-f (segment (span d c) 1
-                         0 (span a d)))))]
-
-    [(11) (out-f (segment (span d c) 1
-                          1 (span b c)))]
-    [(12) (out-f (segment 1 (span b c)
-                          0 (span a d)))]
-    [(13) (out-f (segment 1 (span b c)
-                          (span a b) 0))]
-    [(14) (out-f (segment (span a b) 0
-                          0 (span a d)))]
-    [(15) void]))
+    [else (contours-for-square-impl a b c d (- e) (bitwise-xor cc 15)
+                                    (lambda (s) (out-f (segment-reverse s))))]))
 
 
 ; ------------------------------------------------------------------------------
