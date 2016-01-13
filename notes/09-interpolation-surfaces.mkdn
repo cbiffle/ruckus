@@ -1,0 +1,32 @@
+I've now played with implementing interpolation surfaces, as described by Turk
+and a few other folks.
+
+They can work.  You need to use a basis function that has a Lipschitz-continuous
+bound; Carr uses vector length, and this has a nice bound of 1.
+
+It *appears* that the manifold produced by the method can be constrained to a
+Lipschitz number by using explicit normal constraints, e.g. inside/outside
+points very close to the surface.  But I have not proven this.  If it turns out
+to be false, computing a bound on the surface's Lipschitz number and correcting
+it is straightforward.
+
+However: the Lipschitz number bound seems very conservative, and the manifold
+winds up having a lot of relatively flat surfaces.  This is fine for algorithms
+like marching squares, but tarpits any method that makes Lipschitz-based
+optimization decisions.  Sphere-tracing tends to fall over pretty quickly.
+
+Kind of makes me wonder how Turk and Carr rendered their figures...
+
+Ah, okay.  Carr, at least, used marching tets with a surface-following
+optimization very similar in result to my marching squares optimization.
+
+
+Given a basis function with a known Lipschitz number (say L=1).
+
+A linear combination of such functions, as used in this variational
+interpolation method, using coefficients `w[i]` has Lipschitz number
+
+    (apply + (map abs ws))
+
+This is the conservative bound described above -- it tends to be untenably
+conservative in my experience.
