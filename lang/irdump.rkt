@@ -1,15 +1,14 @@
 #lang racket
 
-(require "./compiler.rkt")
-(require "../lang/evaluator.rkt")
-(require "../lang/loader.rkt")
+(require "../core/compiler.rkt")
+(require "./evaluator.rkt")
+(require "./loader.rkt")
 
 (define (irdump path)
   (let*-values ([(gen) (load-frep path)]
                 [(r ss) (generate-statements (call-with-edsl-root gen))])
     (for ([s (in-list ss)])
-      (pretty-write s)
-      (newline))
+      (pretty-write s))
     (printf "Result in: ~a~n" r)))
 
 (command-line
