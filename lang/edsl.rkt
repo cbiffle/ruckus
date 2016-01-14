@@ -1,9 +1,9 @@
 #lang racket
 
 (require racket/flonum)
-(require "model.rkt")
-(require "math.rkt")
-(require "interpolation.rkt")
+(require "../core/model.rkt")
+(require "../core/math.rkt")
+(require "./interpolation.rkt")
 
 (provide
   union

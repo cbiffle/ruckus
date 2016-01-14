@@ -1,8 +1,8 @@
 #lang racket
 
-(require "edsl.rkt")
-(require "compiler.rkt")
-(require "loader.rkt")
+(require "../core/compiler.rkt")
+(require "../lang/edsl.rkt")
+(require "../lang/loader.rkt")
 
 (define (shaderdump path)
   (let ([gen (load-frep path)])

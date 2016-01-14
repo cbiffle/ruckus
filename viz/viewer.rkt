@@ -3,7 +3,7 @@
 #lang racket/gui
 
 (require (planet "rgl.rkt" ("stephanh" "RacketGL.plt" 1 3)))
-(require "math.rkt")
+(require "../core/math.rkt")
 
 (provide view)
 

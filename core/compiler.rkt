@@ -3,9 +3,9 @@
 (require racket/flonum)
 (require racket/runtime-path)
 
-(require "model.rkt")
-(require "math.rkt")
-(require "df-prims.rkt")
+(require "./model.rkt")
+(require "./math.rkt")
+(require "./df-prims.rkt")
 
 (provide
   generate-statements
@@ -624,8 +624,8 @@
   (let-values ([(r s) (generate-statements n)])
     `(lambda (r0) ,(rkt-fold-statements s r))))
 
-(define-runtime-module-path-index mpi-math "math.rkt")
-(define-runtime-module-path-index mpi-df-prims "df-prims.rkt")
+(define-runtime-module-path-index mpi-math "./math.rkt")
+(define-runtime-module-path-index mpi-df-prims "./df-prims.rkt")
 (define eval-modules (list mpi-math mpi-df-prims))
 
 (define (node->function n)

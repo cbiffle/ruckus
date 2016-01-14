@@ -6,9 +6,9 @@
 (provide outline->svg)
 
 
-(require "math.rkt")
-(require "compiler.rkt")
-(require "edsl.rkt")
+(require "../core/math.rkt")
+(require "../core/compiler.rkt")
+(require "../lang/edsl.rkt")
 
 ; ------------------------------------------------------------------------------
 ; Utility functions that could likely live elsewhere.

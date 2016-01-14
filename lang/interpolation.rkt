@@ -3,7 +3,7 @@
 (provide solve-interpolated-surface-system)
 
 (require math/matrix)
-(require "math.rkt")
+(require "../core/math.rkt")
 
 ; An implementation of Turk's algorithm for implicit surfaces that interpolate.
 ; It isn't clear whether this algorithm can produce predictably

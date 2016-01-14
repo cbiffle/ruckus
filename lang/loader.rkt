@@ -6,13 +6,13 @@
 (require racket/runtime-path)
 (require syntax/modread)
 
-(require "edsl.rkt")
-(require "math.rkt")
+(require "../core/math.rkt")
+(require "./edsl.rkt")
 
 ; Get pointers to the modules that we bind into the EDSL environment, and
 ; put 'em all in a list.
-(define-runtime-module-path-index mpi-math "math.rkt")
-(define-runtime-module-path-index mpi-edsl "edsl.rkt")
+(define-runtime-module-path-index mpi-math "../core/math.rkt")
+(define-runtime-module-path-index mpi-edsl "./edsl.rkt")
 (define modules (list mpi-math mpi-edsl))
 
 ; Loads the Racket module at 'path', reloading it if it has changed.  Returns

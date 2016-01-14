@@ -6,8 +6,8 @@
 ;
 ; For command-line usage, see the end of this file or run with '--help'.
 
-(require "marching-squares.rkt")
-(require "loader.rkt")
+(require "../lang/loader.rkt")
+(require "./marching-squares.rkt")
 
 ; Knobs controlled from the command line, with default values:
 (define design-size 128)    ; size of square ROI to consider

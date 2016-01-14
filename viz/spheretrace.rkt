@@ -6,11 +6,11 @@
 (require (planet "rgl.rkt" ("stephanh" "RacketGL.plt" 1 4)))
 (require ffi/vector)
 
-(require "viewer.rkt")
-(require "edsl.rkt")
-(require "compiler.rkt")
-(require "math.rkt")
-(require "loader.rkt")
+(require "../core/compiler.rkt")
+(require "../core/math.rkt")
+(require "../lang/edsl.rkt")
+(require "../lang/loader.rkt")
+(require "./viewer.rkt")
 
 (define design-path #f)
 

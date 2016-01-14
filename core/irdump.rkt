@@ -1,8 +1,8 @@
 #lang racket
 
-(require "edsl.rkt")
-(require "compiler.rkt")
-(require "loader.rkt")
+(require "./compiler.rkt")
+(require "../lang/edsl.rkt")
+(require "../lang/loader.rkt")
 
 (define (irdump path)
   (let*-values ([(gen) (load-frep path)]

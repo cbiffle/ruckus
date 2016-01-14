@@ -1,6 +1,6 @@
 #lang racket
 
-(require "math.rkt")
+(require "./math.rkt")
 
 (provide
   df-sphere
