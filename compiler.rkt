@@ -5,6 +5,7 @@
 (require "math.rkt")
 
 (provide
+  generate-statements
   node->rkt
   node->function
   node->glsl)
