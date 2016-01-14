@@ -7,7 +7,7 @@
 
 (require "../core/compiler.rkt")
 (require "../core/math.rkt")
-(require "../lang/edsl.rkt")
+(require "../lang/evaluator.rkt")
 (require "../lang/loader.rkt")
 (require "./viewer.rkt")
 

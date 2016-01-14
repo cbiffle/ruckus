@@ -8,7 +8,7 @@
 
 (require "../core/math.rkt")
 (require "../core/compiler.rkt")
-(require "../lang/edsl.rkt")
+(require "../lang/evaluator.rkt")
 
 ; ------------------------------------------------------------------------------
 ; Utility functions that could likely live elsewhere.

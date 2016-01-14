@@ -6,6 +6,8 @@
 (require racket/runtime-path)
 (require syntax/modread)
 
+; These two are included only so they have module path indices for capture
+; below.
 (require "../core/math.rkt")
 (require "./edsl.rkt")
 
