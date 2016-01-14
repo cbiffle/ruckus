@@ -1,6 +1,6 @@
 #lang racket
 
-(require racket/flonum)
+
 (require "../core/model.rkt")
 (require "../core/math.rkt")
 (require "./interpolation.rkt")

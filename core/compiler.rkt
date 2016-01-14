@@ -1,6 +1,5 @@
 #lang racket
 
-(require racket/flonum)
 (require racket/runtime-path)
 
 (require "./model.rkt")

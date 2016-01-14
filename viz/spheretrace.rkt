@@ -1,6 +1,5 @@
 #lang racket/gui
 
-(require racket/flonum)
 (require racket/runtime-path)
 
 (require (planet "rgl.rkt" ("stephanh" "RacketGL.plt" 1 4)))
@@ -115,7 +114,9 @@
       (glUniform1i scU (if (eq? mode 'distance) 1 0)))
 
     (let ([resU (glGetUniformLocation program "resolution")])
-      (glUniform2f resU (->fl width) (->fl height))))
+      (glUniform2f resU
+                   (real->double-flonum width)
+                   (real->double-flonum height))))
 
     (let ([orientU (glGetUniformLocation program "orientation")]
           [qv (quat-v (quat-conjugate orientation))])
