@@ -82,7 +82,7 @@
       [else (list
               (struct-copy node n
                            [children (cons (first children)
-                                           (canon-union
+                                           (canon-smooth-union
                                              (node 'smooth-union
                                                    (node-atts n)
                                                    (rest children))))]))])))
