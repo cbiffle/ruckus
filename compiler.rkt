@@ -1,8 +1,11 @@
 #lang racket
 
 (require racket/flonum)
+(require racket/runtime-path)
+
 (require "model.rkt")
 (require "math.rkt")
+(require "df-prims.rkt")
 
 (provide
   generate-statements
@@ -621,14 +624,20 @@
   (let-values ([(r s) (generate-statements n)])
     `(lambda (r0) ,(rkt-fold-statements s r))))
 
+(define-runtime-module-path-index mpi-math "math.rkt")
+(define-runtime-module-path-index mpi-df-prims "df-prims.rkt")
+(define eval-modules (list mpi-math mpi-df-prims))
+
 (define (node->function n)
   (let ([ns (make-base-namespace)])
-    (namespace-attach-module (current-namespace)
-                             "math.rkt"
-                             ns)
+    (for ([m (in-list eval-modules)])
+      (namespace-attach-module (current-namespace)
+                               (module-path-index-resolve m)
+                               ns))
+
     (parameterize ([current-namespace ns])
-      (namespace-require "math.rkt")
-      (namespace-require "df-prims.rkt")
+      (for ([m (in-list eval-modules)])
+        (namespace-require (module-path-index-resolve m)))
       (eval (node->rkt n)))))
 
 (define (rkt-fold-statements statements r-final)

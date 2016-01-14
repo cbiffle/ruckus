@@ -3,23 +3,34 @@
 (provide
   load-frep)
 
+(require racket/runtime-path)
 (require syntax/modread)
+
 (require "edsl.rkt")
 (require "math.rkt")
+
+; Get pointers to the modules that we bind into the EDSL environment, and
+; put 'em all in a list.
+(define-runtime-module-path-index mpi-math "math.rkt")
+(define-runtime-module-path-index mpi-edsl "edsl.rkt")
+(define modules (list mpi-math mpi-edsl))
 
 ; Loads the Racket module at 'path', reloading it if it has changed.  Returns
 ; the module's binding for 'design'.
 (define (load-frep path)
   (let ([ns (make-base-namespace)])
-    (namespace-attach-module (current-namespace)
-                             "edsl.rkt"
-                             ns)
-    (namespace-attach-module (current-namespace)
-                             "math.rkt"
-                             ns)
+    ; Attach a shared copy of the relevant modules from the current namespace,
+    ; before entering the new one.
+    (for ([m (in-list modules)])
+      (namespace-attach-module (current-namespace)
+                               (module-path-index-resolve m)
+                               ns))
+
     (parameterize ([current-namespace ns])
-      (namespace-require "edsl.rkt")
-      (namespace-require "math.rkt")
+      ; Require the modules so that designs don't have to.
+      (for ([m (in-list modules)])
+        (namespace-require (module-path-index-resolve m)))
+
       (call-with-input-file path (lambda (f)
                                    (port-count-lines! f)
                                    (read-and-eval-syntax f ns)))

@@ -1,8 +1,11 @@
 #lang racket/gui
 
 (require racket/flonum)
+(require racket/runtime-path)
+
 (require (planet "rgl.rkt" ("stephanh" "RacketGL.plt" 1 4)))
 (require ffi/vector)
+
 (require "viewer.rkt")
 (require "edsl.rkt")
 (require "compiler.rkt")
@@ -68,11 +71,13 @@
 (define program #f)
 (define delete-program void)
 
+(define-runtime-path preamble-glsl "./preamble.glsl")
+
 (define (setup)
   (if (or (gl-version-at-least? '(2 0))
           (gl-has-extension? 'GL_ARB_shader_objects))
     (set!-values (program delete-program)
-                 (call-with-input-file "preamble.glsl" load-program))
+                 (call-with-input-file preamble-glsl load-program))
     (printf "This OpenGL does not support shaders, you'll get a plain white rectangle.~%"))
   '(shaded complexity distance))
 
