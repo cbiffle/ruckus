@@ -48,3 +48,36 @@ given location (e.g. the mouse cursor).
 
 
 
+-----------------
+
+Okay.  Here's a path forward.
+
+- Alter the 'node' struct so that leaf nodes can have an ID.
+  - Combinators may or may not have IDs.  Not sure yet.
+
+- Add a pass that gives every leaf node a unique ID.
+  - Possible optimization: identify nodes that are similarly styled, collapse.
+    - This makes mouse selection less accurate.
+
+- Define a way of setting the color of leaves in a subtree.
+  - Likely a combinator.
+
+- Add a pass that collects (ID, color) pairs.
+
+- Generate an alternate evaluator that returns the ID in addition to the
+  distance.
+  - Its callers probably won't use the distance, but it needs to track it
+    internally for CSG purposes.
+
+For sphere-tracing specifically:
+
+- Figure out how many IDs are assigned.
+
+- Generate a 1D texture of the next power of two.
+
+- Fill in its pixels with the appropriate colors.
+
+- In the fragment shader, identify the ID on hit and look up the color.
+
+As a first step, I could procedurally color nodes to prove that discrimination
+works.
