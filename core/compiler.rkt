@@ -505,7 +505,7 @@
       (values r (reverse (*statements*))))))
 
 ; ------------------------------------------------------------------------
-; GLSL code generation.  Currently targeting GLSL 1.1 because I can't
+; GLSL code generation.  Currently targeting GLSL 1.3 because I can't
 ; figure out how to switch Racket into 3.3-core.  (Requesting a non-legacy
 ; GL context crashes.)
 

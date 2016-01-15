@@ -1,3 +1,5 @@
+#version 130
+
 const float PI = 3.14159265358979323846;
 const float ISOSURFACE = 0.0;
 const vec3 LIGHT = vec3(0, 0, 100);
