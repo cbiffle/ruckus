@@ -45,9 +45,15 @@
   (body)
   (end-child))
 
-; Creates an explicit union of child geometry.  Explicit unions are rarely
-; necessary.  In most cases, if multiple children are provided where a single
-; child is expected, they are wrapped in a union implicitly.
+; Creates an explicit union of child nodes.  Any point that is on the surface
+; of at least one of the children is on the surface of the union of those
+; children.
+;
+; This can be useful for cases where listing the children individually would
+; have a different effect, such as inside an 'intersection' node.
+;
+; Unions are also generated implicitly in some cases, generally when a
+; combinator doesn't distinguish its children from one another.
 (define-syntax-rule (union b bs ...)
   (call-as-union (lambda () b bs ...)))
 
@@ -56,8 +62,9 @@
   (body)
   (end-child))
 
-; Creates a smoothed union of child geometry.  Intersections of the children are
-; altered so that their radius of curvature is not less than 'sm' units.
+; Creates a smoothed union of child geometry.  This is similar to a 'union',
+; but creases where child surfaces would meet are altered so that their radius
+; of curvature is not less than 'sm' units.
 (define-syntax-rule (smooth-union sm b bs ...)
   (call-as-smooth-union sm (lambda () b bs ...)))
 
@@ -66,6 +73,8 @@
   (body)
   (end-child))
 
+; Intersects child nodes.  The result will occupy space that is occupied by
+; *all* children.
 (define-syntax-rule (intersection b bs ...)
   (call-as-intersection (lambda () b bs ...)))
 
