@@ -274,92 +274,105 @@
 ; ----------------------------------------------------------------------
 ; Lowering to pseudo-assembler.
 
-(define *statements* (make-parameter '()))
+(define *statements* (make-parameter #f))
+(define *next-value-number* (make-parameter #f))
 
 (define (code form)
   (*statements* (cons form (*statements*))))
 
-(define (generate node query rn)
+(define (fresh-value)
+  (let ([v (*next-value-number*)])
+    (*next-value-number* (+ 1 v))
+    v))
+
+(define (generate node query)
   (case (node-type node)
-    [(sphere) (generate-sphere node query rn)]
-    [(half)   (generate-half node query rn)]
-    [(box)   (generate-box node query rn)]
-    [(interpolation-surface) (generate-interpolation-surface node query rn)]
-    [(union root)  (generate-union node query rn)]
-    [(smooth-union)  (generate-smooth-union node query rn)]
-    [(intersection)  (generate-intersection node query rn)]
-    [(inverse) (generate-inverse node query rn)]
-    [(translate)  (generate-translate node query rn)]
-    [(scale)  (generate-scale node query rn)]
-    [(rotate)  (generate-rotate node query rn)]
-    [(extrude) (generate-extrude node query rn)]
-    [(mirror) (generate-mirror node query rn)]
-    [(repeat) (generate-repeat node query rn)]
-    [(iso)  (generate-iso node query rn)]
+    [(sphere) (generate-sphere node query)]
+    [(half)   (generate-half node query)]
+    [(box)   (generate-box node query)]
+    [(interpolation-surface) (generate-interpolation-surface node query)]
+    [(union root)  (generate-union node query)]
+    [(smooth-union)  (generate-smooth-union node query)]
+    [(intersection)  (generate-intersection node query)]
+    [(inverse) (generate-inverse node query)]
+    [(translate)  (generate-translate node query)]
+    [(scale)  (generate-scale node query)]
+    [(rotate)  (generate-rotate node query)]
+    [(extrude) (generate-extrude node query)]
+    [(mirror) (generate-mirror node query)]
+    [(repeat) (generate-repeat node query)]
+    [(iso)  (generate-iso node query)]
     [else     (error "unmatched node type in generate: " (node-type node))]))
 
-(define (generate-sphere node query rn)
-  (code `(assigns ,rn (sphere (cs ,(car (node-atts node))) (r ,query))))
-  (values rn (+ rn 1)))
+(define (generate-sphere node query)
+  (let ([r (fresh-value)])
+    (code `(assigns ,r (sphere (cs ,(car (node-atts node))) (r ,query))))
+    r))
 
-(define (generate-union node query rn-initial)
+(define (generate-union node query)
   (unless (= 2 (length (node-children node)))
     (error "non-canonical union passed to generate"))
 
-  (let*-values ([(children) (node-children node)]
-                [(d1 rn1) (generate (first children) query rn-initial)]
-                [(d2 rn2) (generate (second children) query rn1)])
-    (code `(assigns ,rn2 (min (r ,d1) (r ,d2))))
-    (values rn2 (+ rn2 1))))
+  (let* ([children (node-children node)]
+         [d1 (generate (first children) query)]
+         [d2 (generate (second children) query)]
+         [d12 (fresh-value)])
+    (code `(assigns ,d12 (min (r ,d1) (r ,d2))))
+    d12))
 
-(define (generate-iso node query rn-initial)
+(define (generate-iso node query)
   (unless (= 1 (length (node-children node)))
     (error "non-canonical iso passed to generate"))
 
-  (let*-values ([(children) (node-children node)]
-                [(shift) (first (node-atts node))]
-                [(d rn1) (generate (first children) query rn-initial)])
-    (code `(assigns ,rn1 (sub 1 (r ,d) (cs ,shift))))
-    (values rn1 (+ rn1 1))))
+  (let* ([children (node-children node)]
+         [shift (first (node-atts node))]
+         [d (generate (first children) query)]
+         [d+ (fresh-value)])
+    (code `(assigns ,d+ (sub 1 (r ,d) (cs ,shift))))
+    d+))
 
-(define (generate-smooth-union node query rn-initial)
+(define (generate-smooth-union node query)
   (unless (= 2 (length (node-children node)))
     (error "non-canonical smooth-union passed to generate"))
 
-  (let*-values ([(children) (node-children node)]
-                [(smooth) (first (node-atts node))]
-                [(d1 rn1) (generate (first children) query rn-initial)]
-                [(d2 rn2) (generate (second children) query rn1)])
-    (code `(assigns ,rn2 (smin (cs ,smooth) (r ,d1) (r ,d2))))
-    (values rn2 (+ rn2 1))))
+  (let* ([children (node-children node)]
+         [smooth (first (node-atts node))]
+         [d1 (generate (first children) query)]
+         [d2 (generate (second children) query)]
+         [d12 (fresh-value)])
+    (code `(assigns ,d12 (smin (cs ,smooth) (r ,d1) (r ,d2))))
+    d12))
 
-(define (generate-intersection node query rn-initial)
+(define (generate-intersection node query)
   (unless (= 2 (length (node-children node)))
     (error "non-canonical intersection passed to generate"))
 
-  (let*-values ([(children) (node-children node)]
-                [(d1 rn1) (generate (first children) query rn-initial)]
-                [(d2 rn2) (generate (second children) query rn1)])
-    (code `(assigns ,rn2 (max (r ,d1) (r ,d2))))
-    (values rn2 (+ rn2 1))))
+  (let* ([children (node-children node)]
+         [d1 (generate (first children) query)]
+         [d2 (generate (second children) query)]
+         [d12 (fresh-value)])
+    (code `(assigns ,d12 (max (r ,d1) (r ,d2))))
+    d12))
 
-(define (generate-inverse node query rn-initial)
+(define (generate-inverse node query)
   (unless (= 1 (length (node-children node)))
     (error "non-canonical inverse passed to generate"))
 
-  (let*-values ([(children) (node-children node)]
-                [(d rn) (generate (first children) query rn-initial)])
-    (code `(assigns ,rn (sub 1 (cs 0) (r ,d))))
-    (values rn (+ rn 1))))
+  (let* ([children (node-children node)]
+         [d (generate (first children) query)]
+         [-d (fresh-value)])
+    (code `(assigns ,-d (sub 1 (cs 0) (r ,d))))
+    -d))
 
-(define (generate-translate node query rn)
+(define (generate-translate node query)
   (unless (= 1 (length (node-children node)))
     (error "non-canonical translate passed to generate"))
 
-  (code `(assignv ,rn (sub 3 (r ,query) (cv ,(first (node-atts node))))))
-  (generate (first (node-children node)) rn (+ rn 1)))
+  (let ([tq (fresh-value)])
+    (code `(assignv ,tq (sub 3 (r ,query) (cv ,(first (node-atts node))))))
+    (generate (first (node-children node)) tq)))
 
-(define (generate-scale node query rn)
+(define (generate-scale node query)
   (unless (= 1 (length (node-children node)))
     (error "non-canonical scale passed to generate"))
 
@@ -368,61 +381,61 @@
   ; - 'scale-inv' is the inverse, by which we multiply the query point.
   ; - 'correction' is the Lipschitz factor correction that must be applied to
   ;   the result to maintain L=1 Lipschitz continuity.
+  ; - 'sq' is the value number for the scaled query point.
   (let* ([scale (first (node-atts node))]
-         [scale-inv (map (lambda (n) (/ 1 n)) scale)]
-         [correction (apply min scale)])
+         [scale-inv (map (lambda (n) (1 . / . n)) scale)]
+         [correction (apply min scale)]
+         [sq (fresh-value)])
     ; Generate the scaled query point.
-    (code `(assignv ,rn (mul 3 (r ,query) (cv ,scale-inv))))
+    (code `(assignv ,sq (mul 3 (r ,query) (cv ,scale-inv))))
     ; Evaluate the child's distance field.
-    (let-values ([(d rn2) (generate (first (node-children node))
-                                    rn
-                                    (+ rn 1))])
+    (let ([d (generate (first (node-children node)) sq)]
+          [d-corrected (fresh-value)])
       ; Apply Lipschitz correction.
-      (code `(assigns ,rn2 (mul 1 (r ,d) (cs ,correction))))
-      (values rn2 (+ rn2 1)))))
+      (code `(assigns ,d-corrected (mul 1 (r ,d) (cs ,correction))))
+      d-corrected)))
 
-(define (generate-extrude node query rn0)
+(define (generate-extrude node query)
   (unless (= 1 (length (node-children node)))
     (error "non-canonical extrude passed to generate"))
 
-  ; Populate rn with the projection of the query point onto the XY plane.
-  (code `(assignv ,rn0 (vec3 (proj 3 (r ,query) x)
-                             (proj 3 (r ,query) y)
-                             (cs 0))))
-
   (let ([children (node-children node)]
         [th-sym (/ (first (node-atts node)) 2)]
-        [rn1 (+ rn0 1)])
-    (let-values ([(d rn2) (generate (first children)
-                                    rn0
-                                    rn1)])
-      (code `(assigns ,rn2 (max (r ,d)
-                                (sub 1 (abs (proj 3 (r ,query) z))
-                                     (cs ,th-sym)))))
-      (values rn2 (+ rn2 1)))))
+        [pq (fresh-value)])
+    ; Populate pq with the projection of the query point onto the XY plane.
+    (code `(assignv ,pq (vec3 (proj 3 (r ,query) x)
+                              (proj 3 (r ,query) y)
+                              (cs 0))))
+    ; Evaluate the child geometry.
+    (let ([d (generate (first children) pq)]
+          [extruded (fresh-value)])
+      ; Limit extent along Z.
+      (code `(assigns ,extruded (max (r ,d)
+                                     (sub 1 (abs (proj 3 (r ,query) z))
+                                            (cs ,th-sym)))))
+      extruded)))
 
-(define (generate-mirror node query rn0)
+(define (generate-mirror node query)
   (unless (= 1 (length (node-children node)))
     (error "non-canonical mirror passed to generate"))
 
-  ; Populate rn with the reflection of the query point into the positive
-  ; side of the mirror axis space.
-  (case (first (node-atts node))
-    [(x) (code `(assignv ,rn0 (vec3 (abs (proj 3 (r ,query) x))
-                                    (proj 3 (r ,query) y)
-                                    (proj 3 (r ,query) z))))]
-    [(y) (code `(assignv ,rn0 (vec3 (proj 3 (r ,query) x)
-                                    (abs (proj 3 (r ,query) y))
-                                    (proj 3 (r ,query) z))))]
-    [(z) (code `(assignv ,rn0 (vec3 (proj 3 (r ,query) x)
-                                    (proj 3 (r ,query) y)
-                                    (abs (proj 3 (r ,query) z)))))])
+  (let ([children (node-children node)]
+        [rq (fresh-value)])
+    ; Populate rq with the reflection of the query point into the positive
+    ; side of the mirror axis space.
+    (case (first (node-atts node))
+      [(x) (code `(assignv ,rq (vec3 (abs (proj 3 (r ,query) x))
+                                     (proj 3 (r ,query) y)
+                                     (proj 3 (r ,query) z))))]
+      [(y) (code `(assignv ,rq (vec3 (proj 3 (r ,query) x)
+                                     (abs (proj 3 (r ,query) y))
+                                     (proj 3 (r ,query) z))))]
+      [(z) (code `(assignv ,rq (vec3 (proj 3 (r ,query) x)
+                                     (proj 3 (r ,query) y)
+                                     (abs (proj 3 (r ,query) z)))))])
+    (generate (first children) rq)))
 
-  (let* ([children (node-children node)]
-         [rn1 (+ rn0 1)])
-    (generate (first children) rn0 rn1)))
-
-(define (generate-repeat node query rn0)
+(define (generate-repeat node query)
   ; TODO: this is an awful lot of code for a generator.  Perhaps this node
   ; should be broken up into smaller chunks?  Or perhaps the meat of this
   ; transform should be moved into a GLSL function?
@@ -431,59 +444,73 @@
 
   (let ([children (node-children node)]
         [axis (first (node-atts node))]
-        [spacing (list 'cs (second (node-atts node)))])
+        [spacing (list 'cs (second (node-atts node)))]
 
-    ; Populate rn0 with the query point made periodic over the interval.
+        ; pq will hold the value number for the periodic query point.
+        [pq (fresh-value)]
+        ; pq+ and pq- hold the same point, shifted up and down by one interval,
+        ; respectively.
+        [pq- (fresh-value)]
+        [pq+ (fresh-value)]
+        )
+
+    ; Populate pq with the query point made periodic over the interval.
     (case axis
-      [(x) (code `(assignv ,rn0 (vec3 (mod (proj 3 (r ,query) x) ,spacing)
-                                      (proj 3 (r ,query) y)
-                                      (proj 3 (r ,query) z))))]
-      [(y) (code `(assignv ,rn0 (vec3 (proj 3 (r ,query) x)
-                                      (mod (proj 3 (r ,query) y) ,spacing)
-                                      (proj 3 (r ,query) z))))]
-      [(z) (code `(assignv ,rn0 (vec3 (proj 3 (r ,query) x)
-                                      (proj 3 (r ,query) y)
-                                      (mod (proj 3 (r ,query) z) ,spacing))))])
+      [(x) (code `(assignv ,pq (vec3 (mod (proj 3 (r ,query) x) ,spacing)
+                                     (proj 3 (r ,query) y)
+                                     (proj 3 (r ,query) z))))]
+      [(y) (code `(assignv ,pq (vec3 (proj 3 (r ,query) x)
+                                     (mod (proj 3 (r ,query) y) ,spacing)
+                                     (proj 3 (r ,query) z))))]
+      [(z) (code `(assignv ,pq (vec3 (proj 3 (r ,query) x)
+                                     (proj 3 (r ,query) y)
+                                     (mod (proj 3 (r ,query) z) ,spacing))))])
 
-    ; Populate rn1 with the negatively shifted query point, rn2 with the
+    ; Populate pq- with the negatively shifted query point, pq+ with the
     ; positive.
-    (let ([z (list 'cs 0)])
+    (let ([z '(cs 0)])  ; shorthand
       (case axis
         [(x)
-         (code `(assignv ,(+ rn0 1) (sub 3 (r ,rn0) (vec3 ,spacing ,z ,z))))
-         (code `(assignv ,(+ rn0 2) (add 3 (r ,rn0) (vec3 ,spacing ,z ,z))))]
+         (code `(assignv ,pq- (sub 3 (r ,pq) (vec3 ,spacing ,z ,z))))
+         (code `(assignv ,pq+ (add 3 (r ,pq) (vec3 ,spacing ,z ,z))))]
         [(y)
-         (code `(assignv ,(+ rn0 1) (sub 3 (r ,rn0) (vec3 ,z ,spacing ,z))))
-         (code `(assignv ,(+ rn0 2) (add 3 (r ,rn0) (vec3 ,z ,spacing ,z))))]
+         (code `(assignv ,pq- (sub 3 (r ,pq) (vec3 ,z ,spacing ,z))))
+         (code `(assignv ,pq+ (add 3 (r ,pq) (vec3 ,z ,spacing ,z))))]
         [(z)
-         (code `(assignv ,(+ rn0 1) (sub 3 (r ,rn0) (vec3 ,z ,z ,spacing))))
-         (code `(assignv ,(+ rn0 2) (add 3 (r ,rn0) (vec3 ,z ,z ,spacing))))]))
+         (code `(assignv ,pq- (sub 3 (r ,pq) (vec3 ,z ,z ,spacing))))
+         (code `(assignv ,pq+ (add 3 (r ,pq) (vec3 ,z ,z ,spacing))))]))
 
-    (let*-values ([(dc rn3) (generate (first children) rn0 (+ rn0 3))]
-                  [(dm rn4) (generate (first children) (+ rn0 1) rn3)]
-                  [(dp rn5) (generate (first children) (+ rn0 2) rn4)])
-      (code `(assigns ,rn5 (min (r ,dc) (min (r ,dm) (r ,dp)))))
-      (values rn5 (+ rn5 1)))))
+    ; Generate child geometry three times, sampling three different points.
+    (let ([d (generate (first children) pq)]
+          [d- (generate (first children) pq-)]
+          [d+ (generate (first children) pq+)]
+          [d-result (fresh-value)])
+      (code `(assigns ,d-result (min (r ,d) (min (r ,d-) (r ,d+)))))
+      d-result)))
 
-(define (generate-rotate node query rn)
+(define (generate-rotate node query)
   (unless (= 1 (length (node-children node)))
     (error "non-canonical rotate passed to generate"))
 
-  (code `(assignv ,rn (qrot (cq ,(first (node-atts node))) (r ,query))))
-  (generate (first (node-children node)) rn (+ rn 1)))
+  (let ([rq (fresh-value)]
+        [rotation (first (node-atts node))])
+    (code `(assignv ,rq (qrot (cq ,rotation) (r ,query))))
+    (generate (first (node-children node)) rq)))
 
-(define (generate-half node query rn)
+(define (generate-half node query)
   (let ([normal (first (node-atts node))]
-        [dist   (second (node-atts node))])
-    (code `(assigns ,rn (sub 1 (dot 3 (r ,query) (cv ,normal)) (cs ,dist))))
-    (values rn (+ rn 1))))
+        [dist   (second (node-atts node))]
+        [d (fresh-value)])
+    (code `(assigns ,d (sub 1 (dot 3 (r ,query) (cv ,normal)) (cs ,dist))))
+    d))
 
-(define (generate-box node query rn)
-  (let ([corner (vec3-div (first (node-atts node)) 2)])
-    (code `(assigns ,rn (box (cv ,corner) (r ,query))))
-    (values rn (+ rn 1))))
+(define (generate-box node query)
+  (let ([corner (vec3-div (first (node-atts node)) 2)]
+        [d (fresh-value)])
+    (code `(assigns ,d (box (cv ,corner) (r ,query))))
+    d))
 
-(define (generate-interpolation-surface node query rn)
+(define (generate-interpolation-surface node query)
   (define (sum-of-products solution)
     (for/fold ([expr #f])
               ([c (in-list solution)]
@@ -495,13 +522,15 @@
           `(add 1 ,expr ,prod)
           prod))))
 
-  (let ([solution (first (node-atts node))])
-    (code `(assigns ,rn ,(sum-of-products solution)))
-    (values rn (+ rn 1))))
+  (let ([solution (first (node-atts node))]
+        [d (fresh-value)])
+    (code `(assigns ,d ,(sum-of-products solution)))
+    d))
 
 (define (generate-statements node)
-  (parameterize ([*statements* '()])
-    (let-values ([(r n) (generate (first (canonicalize node)) 0 1)])
+  (parameterize ([*statements* '()]
+                 [*next-value-number* 0])
+    (let ([r (generate (first (canonicalize node)) (fresh-value))])
       (values r (reverse (*statements*))))))
 
 ; ------------------------------------------------------------------------
