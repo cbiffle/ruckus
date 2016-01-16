@@ -81,3 +81,79 @@ For sphere-tracing specifically:
 
 As a first step, I could procedurally color nodes to prove that discrimination
 works.
+
+
+----------------
+
+The first architectural implication of this: I now need to produce two different
+evaluation schemes for the same input.
+
+Which means there is no longer *a* compiler or *a* backend.  Or even *an*
+intermediate representation, necessarily.
+
+So I need to break things up a bit.
+
+The canonicalization pass is probably general.  The enumeration pass is specific
+to discrimination, but can be treated as general.
+
+...These two evaluation methods are very similar.  Discrimination is really a
+superset of the functionality of evaluation.  So perhaps I could just tweak the
+IR to describe discrimination, and then optimize that away for the lighter
+evaluator?
+
+Basically, could I define operations that are willing to route combinations of
+distance and identity, and then rewrite them into distance-only versions for
+faster evaluation?  (The GLSL/Racket compilers should do this for me, but I
+really don't trust them.)
+
+Reviewing the operations in the IR, most of them are primitive
+arithmetic/mathematical operations.  It's the combinators that would have to
+change.
+
+- max
+- min
+- smin
+
+Evaluating a primitive, a leaf node, might involve generating *two* values
+instead of the current single.  One would carry the distance result.  The other,
+the NID.
+
+This could simply be two statements:
+
+    (assigns 1 (sphere (cs 200) (r 0)))
+    (assigns 2 (cs 0))
+
+The call to the generator would then return another value: the value ID of the
+NID.
+
+Combinators could be altered by adding a ternary operation, here strawmanned as
+'choose':
+
+    ; assume (distance, ID) pairs in (1, 3) and (2, 4)
+    (assigns 5 (min (r 1) (r 2)))
+    (assigns 6 (choose (< (r 1) (r 2)) (r 3) (r 4)))
+
+The only wrinkle here is that 'scalar' (as in 'cs' and 'assigns') currently
+means 'float', but for maximum precision, it probably makes sense to use i32 for
+NIDs.  So I might need to either separate the type indicator from the opcode, or
+break up the opcode.  Of course, this mostly affects the GLSL backend, since the
+Racket backend is not currently typed.
+
+The generated code will wind up being two intertwined value graphs, where the
+NID graph touches the distance graph at certain points to test values.  The
+distance graph, however, is totally independent of the NID graph.  So a simple
+DCE pass would suffice to optimize the graph for spheretracing.
+
+A DCE pass applied to the discriminator is unlikely to eliminate any of the
+distance calculations, however; every intermediate distance is likely to be
+tested at least once.  This is fine.  Discrimination happens rarely, relative to
+distance evaluation.
+
+
+So, currently, generation routines return two values:
+- The result value, and
+- The next free value number.
+
+This is *already* getting unwieldy.  Managing the next free value number
+explicitly is probably unnecessary.  In Haskell I'd move it into a monad.  In
+Racket I could approximate the effect by using a parameter.
