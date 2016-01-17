@@ -331,6 +331,36 @@
     (code `(assigns ,r (sphere (cs ,(car (node-atts node))) (r ,query))))
     r))
 
+(define (generate-half node query)
+  (let ([normal (first (node-atts node))]
+        [dist   (second (node-atts node))]
+        [d (fresh-value)])
+    (code `(assigns ,d (sub 1 (dot 3 (r ,query) (cv ,normal)) (cs ,dist))))
+    d))
+
+(define (generate-box node query)
+  (let ([corner (vec3-div (first (node-atts node)) 2)]
+        [d (fresh-value)])
+    (code `(assigns ,d (box (cv ,corner) (r ,query))))
+    d))
+
+(define (generate-interpolation-surface node query)
+  (define (sum-of-products solution)
+    (for/fold ([expr #f])
+              ([c (in-list solution)]
+              #:when (not (zero? (cdr c))))
+      (let ([prod `(mul 1
+                        (cs ,(cdr c))
+                        (length 3 (sub 3 (r ,query) (cv ,(car c)))))])
+        (if expr
+          `(add 1 ,expr ,prod)
+          prod))))
+
+  (let ([solution (first (node-atts node))]
+        [d (fresh-value)])
+    (code `(assigns ,d ,(sum-of-products solution)))
+    d))
+
 (define (generate-union node query)
   (unless (= 2 (length (node-children node)))
     (error "non-canonical union passed to generate"))
@@ -518,36 +548,6 @@
         [rotation (first (node-atts node))])
     (code `(assignv ,rq (qrot (cq ,rotation) (r ,query))))
     (generate (first (node-children node)) rq)))
-
-(define (generate-half node query)
-  (let ([normal (first (node-atts node))]
-        [dist   (second (node-atts node))]
-        [d (fresh-value)])
-    (code `(assigns ,d (sub 1 (dot 3 (r ,query) (cv ,normal)) (cs ,dist))))
-    d))
-
-(define (generate-box node query)
-  (let ([corner (vec3-div (first (node-atts node)) 2)]
-        [d (fresh-value)])
-    (code `(assigns ,d (box (cv ,corner) (r ,query))))
-    d))
-
-(define (generate-interpolation-surface node query)
-  (define (sum-of-products solution)
-    (for/fold ([expr #f])
-              ([c (in-list solution)]
-              #:when (not (zero? (cdr c))))
-      (let ([prod `(mul 1
-                        (cs ,(cdr c))
-                        (length 3 (sub 3 (r ,query) (cv ,(car c)))))])
-        (if expr
-          `(add 1 ,expr ,prod)
-          prod))))
-
-  (let ([solution (first (node-atts node))]
-        [d (fresh-value)])
-    (code `(assigns ,d ,(sum-of-products solution)))
-    d))
 
 (define (generate-statements node)
   (parameterize ([*statements* '()]
