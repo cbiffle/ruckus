@@ -326,6 +326,10 @@
     [(iso)  (generate-iso node query)]
     [else     (error "unmatched node type in generate: " (node-type node))]))
 
+;
+; Primitive generators
+;
+
 (define (generate-sphere node query)
   (let ([r (fresh-value)])
     (code `(assigns ,r (sphere (cs ,(car (node-atts node))) (r ,query))))
@@ -361,16 +365,30 @@
     (code `(assigns ,d ,(sum-of-products solution)))
     d))
 
-(define (generate-union node query)
+;
+; Binary combinators
+;
+
+(define ((binary-combinator gen) node query)
   (unless (= 2 (length (node-children node)))
-    (error "non-canonical union passed to generate"))
+    (error "non-canonical node passed to generate:" (node-type node)))
 
   (let* ([children (node-children node)]
          [d1 (generate (first children) query)]
          [d2 (generate (second children) query)]
          [d12 (fresh-value)])
-    (code `(assigns ,d12 (min (r ,d1) (r ,d2))))
+    (code `(assigns ,d12
+                    ,(apply gen `(r ,d1) `(r ,d2) (node-atts node))))
     d12))
+
+(define generate-union (binary-combinator (lambda (x y) `(min ,x ,y))))
+
+(define generate-smooth-union
+  (binary-combinator (lambda (x y smooth)
+                       `(smin (cs ,smooth) ,x ,y))))
+
+(define generate-intersection
+  (binary-combinator (lambda (x y) `(max ,x ,y))))
 
 (define (generate-iso node query)
   (unless (= 1 (length (node-children node)))
@@ -383,46 +401,46 @@
     (code `(assigns ,d+ (sub 1 (r ,d) (cs ,shift))))
     d+))
 
-(define (generate-smooth-union node query)
-  (unless (= 2 (length (node-children node)))
-    (error "non-canonical smooth-union passed to generate"))
+;
+; Unary post-transforms
+;
 
-  (let* ([children (node-children node)]
-         [smooth (first (node-atts node))]
-         [d1 (generate (first children) query)]
-         [d2 (generate (second children) query)]
-         [d12 (fresh-value)])
-    (code `(assigns ,d12 (smin (cs ,smooth) (r ,d1) (r ,d2))))
-    d12))
-
-(define (generate-intersection node query)
-  (unless (= 2 (length (node-children node)))
-    (error "non-canonical intersection passed to generate"))
-
-  (let* ([children (node-children node)]
-         [d1 (generate (first children) query)]
-         [d2 (generate (second children) query)]
-         [d12 (fresh-value)])
-    (code `(assigns ,d12 (max (r ,d1) (r ,d2))))
-    d12))
-
-(define (generate-inverse node query)
+(define ((unary-post-combinator gen) node query)
   (unless (= 1 (length (node-children node)))
-    (error "non-canonical inverse passed to generate"))
+    (error "non-canonical node passed to generate:" (node-type node)))
 
   (let* ([children (node-children node)]
          [d (generate (first children) query)]
-         [-d (fresh-value)])
-    (code `(assigns ,-d (sub 1 (cs 0) (r ,d))))
-    -d))
+         [new-d (fresh-value)])
+    (code `(assigns ,new-d ,(apply gen `(r ,d) (node-atts node))))
+    new-d))
 
-(define (generate-translate node query)
+(define generate-inverse
+  (unary-post-combinator (lambda (d) `(sub 1 (cs 0) ,d))))
+
+
+;
+; Unary pre-transforms
+;
+
+(define ((unary-pre-combinator gen) node query)
   (unless (= 1 (length (node-children node)))
-    (error "non-canonical translate passed to generate"))
+    (error "non-canonical node passed to generate:" (node-type node)))
 
   (let ([tq (fresh-value)])
-    (code `(assignv ,tq (sub 3 (r ,query) (cv ,(first (node-atts node))))))
+    (code `(assignv ,tq ,(apply gen `(r ,query) (node-atts node))))
     (generate (first (node-children node)) tq)))
+
+(define generate-translate
+  (unary-pre-combinator (lambda (q v) `(sub 3 ,q (cv ,v)))))
+
+(define generate-rotate
+  (unary-pre-combinator (lambda (q r) `(qrot (cq ,r) ,q))))
+
+
+;
+; More complicated, particularly non-isometric, transforms
+;
 
 (define (generate-scale node query)
   (unless (= 1 (length (node-children node)))
@@ -539,15 +557,6 @@
           [d-result (fresh-value)])
       (code `(assigns ,d-result (min (r ,d) (min (r ,d-) (r ,d+)))))
       d-result)))
-
-(define (generate-rotate node query)
-  (unless (= 1 (length (node-children node)))
-    (error "non-canonical rotate passed to generate"))
-
-  (let ([rq (fresh-value)]
-        [rotation (first (node-atts node))])
-    (code `(assignv ,rq (qrot (cq ,rotation) (r ,query))))
-    (generate (first (node-children node)) rq)))
 
 (define (generate-statements node)
   (parameterize ([*statements* '()]
