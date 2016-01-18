@@ -437,73 +437,58 @@
 (define generate-rotate
   (unary-pre-combinator (lambda (q r) `(qrot (cq ,r) ,q))))
 
+(define generate-mirror
+  (unary-pre-combinator
+    (lambda (q axis)
+      (case axis
+        [(x) `(vec3 (abs (proj 3 ,q x))
+                    (proj 3 ,q y)
+                    (proj 3 ,q z))]
+        [(y) `(vec3 (proj 3 ,q x)
+                    (abs (proj 3 ,q y))
+                    (proj 3 ,q z))]
+        [(z) `(vec3 (proj 3 ,q x)
+                    (proj 3 ,q y)
+                    (abs (proj 3 ,q z)))]))))
+
 
 ;
 ; More complicated, particularly non-isometric, transforms
 ;
 
-(define (generate-scale node query)
+(define ((unary-bracket-combinator pre-gen post-gen) node query)
   (unless (= 1 (length (node-children node)))
-    (error "non-canonical scale passed to generate"))
+    (error "non-canonical node passed to generate:" (node-type node)))
 
-  ; Bookkeeping:
-  ; - 'scale' is the 3-list of scale factors ordered by axis.
-  ; - 'scale-inv' is the inverse, by which we multiply the query point.
-  ; - 'correction' is the Lipschitz factor correction that must be applied to
-  ;   the result to maintain L=1 Lipschitz continuity.
-  ; - 'sq' is the value number for the scaled query point.
-  (let* ([scale (first (node-atts node))]
-         [scale-inv (map (lambda (n) (1 . / . n)) scale)]
-         [correction (apply min scale)]
-         [sq (fresh-value)])
-    ; Generate the scaled query point.
-    (code `(assignv ,sq (mul 3 (r ,query) (cv ,scale-inv))))
-    ; Evaluate the child's distance field.
-    (let ([d (generate (first (node-children node)) sq)]
+  (let* ([tq (fresh-value)]
+         [atts (node-atts node)]
+         [child (first (node-children node))]
+         [rq `(r ,query)])
+    (code `(assignv ,tq ,(apply pre-gen rq atts)))
+    (let ([d (generate child tq)]
           [d-corrected (fresh-value)])
-      ; Apply Lipschitz correction.
-      (code `(assigns ,d-corrected (mul 1 (r ,d) (cs ,correction))))
+      (code `(assigns ,d-corrected ,(apply post-gen rq `(r ,d) atts)))
       d-corrected)))
 
-(define (generate-extrude node query)
-  (unless (= 1 (length (node-children node)))
-    (error "non-canonical extrude passed to generate"))
+(define generate-scale
+  (unary-bracket-combinator
+    (lambda (q scale)
+      (let ([scale-inv (map (lambda (n) (1 . / . n)) scale)])
+        `(mul 3 ,q (cv ,scale-inv))))
+    (lambda (q d scale)
+      (let ([correction (apply min scale)])
+        `(mul 1 ,d (cs ,correction))))))
 
-  (let ([children (node-children node)]
-        [th-sym (/ (first (node-atts node)) 2)]
-        [pq (fresh-value)])
-    ; Populate pq with the projection of the query point onto the XY plane.
-    (code `(assignv ,pq (vec3 (proj 3 (r ,query) x)
-                              (proj 3 (r ,query) y)
-                              (cs 0))))
-    ; Evaluate the child geometry.
-    (let ([d (generate (first children) pq)]
-          [extruded (fresh-value)])
-      ; Limit extent along Z.
-      (code `(assigns ,extruded (max (r ,d)
-                                     (sub 1 (abs (proj 3 (r ,query) z))
-                                            (cs ,th-sym)))))
-      extruded)))
-
-(define (generate-mirror node query)
-  (unless (= 1 (length (node-children node)))
-    (error "non-canonical mirror passed to generate"))
-
-  (let ([children (node-children node)]
-        [rq (fresh-value)])
-    ; Populate rq with the reflection of the query point into the positive
-    ; side of the mirror axis space.
-    (case (first (node-atts node))
-      [(x) (code `(assignv ,rq (vec3 (abs (proj 3 (r ,query) x))
-                                     (proj 3 (r ,query) y)
-                                     (proj 3 (r ,query) z))))]
-      [(y) (code `(assignv ,rq (vec3 (proj 3 (r ,query) x)
-                                     (abs (proj 3 (r ,query) y))
-                                     (proj 3 (r ,query) z))))]
-      [(z) (code `(assignv ,rq (vec3 (proj 3 (r ,query) x)
-                                     (proj 3 (r ,query) y)
-                                     (abs (proj 3 (r ,query) z)))))])
-    (generate (first children) rq)))
+(define generate-extrude
+  (unary-bracket-combinator
+    (lambda (q th)
+      `(vec3 (proj 3 ,q x)
+             (proj 3 ,q y)
+             (cs 0)))
+    (lambda (q d th)
+      `(max ,d
+            (sub 1 (abs (proj 3 ,q z))
+                   (cs ,(th . / . 2)))))))
 
 (define (generate-repeat node query)
   ; TODO: this is an awful lot of code for a generator.  Perhaps this node
