@@ -506,34 +506,30 @@
         ; pq+ and pq- hold the same point, shifted up and down by one interval,
         ; respectively.
         [pq- (fresh-value)]
-        [pq+ (fresh-value)]
-        )
+        [pq+ (fresh-value)])
 
     ; Populate pq with the query point made periodic over the interval.
-    (case axis
-      [(x) (code `(assignv ,pq (vec3 (mod (proj 3 (r ,query) x) ,spacing)
-                                     (proj 3 (r ,query) y)
-                                     (proj 3 (r ,query) z))))]
-      [(y) (code `(assignv ,pq (vec3 (proj 3 (r ,query) x)
-                                     (mod (proj 3 (r ,query) y) ,spacing)
-                                     (proj 3 (r ,query) z))))]
-      [(z) (code `(assignv ,pq (vec3 (proj 3 (r ,query) x)
-                                     (proj 3 (r ,query) y)
-                                     (mod (proj 3 (r ,query) z) ,spacing))))])
+    (code `(assignv ,pq
+                    ,(case axis
+                       [(x) `(vec3 (mod (proj 3 (r ,query) x) ,spacing)
+                                   (proj 3 (r ,query) y)
+                                   (proj 3 (r ,query) z))]
+                       [(y) `(vec3 (proj 3 (r ,query) x)
+                                   (mod (proj 3 (r ,query) y) ,spacing)
+                                   (proj 3 (r ,query) z))]
+                       [(z) `(vec3 (proj 3 (r ,query) x)
+                                   (proj 3 (r ,query) y)
+                                   (mod (proj 3 (r ,query) z) ,spacing))])))
 
     ; Populate pq- with the negatively shifted query point, pq+ with the
     ; positive.
-    (let ([z '(cs 0)])  ; shorthand
-      (case axis
-        [(x)
-         (code `(assignv ,pq- (sub 3 (r ,pq) (vec3 ,spacing ,z ,z))))
-         (code `(assignv ,pq+ (add 3 (r ,pq) (vec3 ,spacing ,z ,z))))]
-        [(y)
-         (code `(assignv ,pq- (sub 3 (r ,pq) (vec3 ,z ,spacing ,z))))
-         (code `(assignv ,pq+ (add 3 (r ,pq) (vec3 ,z ,spacing ,z))))]
-        [(z)
-         (code `(assignv ,pq- (sub 3 (r ,pq) (vec3 ,z ,z ,spacing))))
-         (code `(assignv ,pq+ (add 3 (r ,pq) (vec3 ,z ,z ,spacing))))]))
+    (let* ([z '(cs 0)]  ; shorthand
+           [v (case axis
+                [(x) `(vec3 ,spacing ,z ,z)]
+                [(y) `(vec3 ,z ,spacing ,z)]
+                [(z) `(vec3 ,z ,z ,spacing)])])
+      (code `(assignv ,pq- (sub 3 (r ,pq) ,v)))
+      (code `(assignv ,pq+ (add 3 (r ,pq) ,v))))
 
     ; Generate child geometry three times, sampling three different points.
     (let ([d (generate (first children) pq)]
