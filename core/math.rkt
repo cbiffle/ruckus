@@ -4,6 +4,7 @@
 ; supporting my CAD project.
 
 (provide
+  round-up-to-power-of-two
   real-mod
 
   (struct-out vec3)
@@ -29,6 +30,11 @@
   quat-rotate
   quat-rotation-from-to
   quat-rotation-around)
+
+; Computes the smallest power of two equal to or larger than the positive
+; integer 'x'.
+(define (round-up-to-power-of-two x)
+  (arithmetic-shift 1 (integer-length (- x 1))))
 
 (define (real-mod n m)
   (when (not (positive? m))

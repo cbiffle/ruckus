@@ -10,14 +10,6 @@
 (require "../core/compiler.rkt")
 (require "../lang/evaluator.rkt")
 
-; ------------------------------------------------------------------------------
-; Utility functions that could likely live elsewhere.
-
-; Computes the smallest power of two equal to or larger than the positive
-; integer 'x'.
-(define (round-up-to-power-of-two x)
-  (arithmetic-shift 1 (integer-length (- x 1))))
-
 
 ; ------------------------------------------------------------------------------
 ; Occupancy test, centralized so it stays consistent.
