@@ -54,7 +54,7 @@
            [center (vec3-mul center/q q)]
            [center-to-corner (* q center-to-corner/q)]
            [center-level (f center)])
-      (when (center-level . <= . center-to-corner)
+      (when ((abs center-level) . <= . center-to-corner)
         (sparse-polygonize f    x         y         z      s/2 q out-fn)
         (sparse-polygonize f (+ x s/2)    y         z      s/2 q out-fn)
         (sparse-polygonize f    x      (+ y s/2)    z      s/2 q out-fn)
