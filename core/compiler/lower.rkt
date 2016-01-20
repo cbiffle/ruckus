@@ -109,17 +109,6 @@
 (define generate-intersection
   (binary-combinator (lambda (x y) `(max ,x ,y))))
 
-(define (generate-iso node query)
-  (unless (= 1 (length (node-children node)))
-    (error "non-canonical iso passed to generate"))
-
-  (let* ([children (node-children node)]
-         [shift (first (node-atts node))]
-         [d (generate (first children) query)]
-         [d+ (fresh-value)])
-    (code `(assignf ,d+ (sub 1 (r ,d) (cf ,shift))))
-    d+))
-
 ;
 ; Unary post-transforms
 ;
@@ -136,6 +125,9 @@
 
 (define generate-inverse
   (unary-post-combinator (lambda (d) `(sub 1 (cf 0) ,d))))
+
+(define generate-iso
+  (unary-post-combinator (lambda (d shift) `(sub 1 ,d (cf ,shift)))))
 
 
 ;
