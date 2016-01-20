@@ -81,7 +81,4 @@
     [(cons (list (or 'assignf 'assign3f) r v) rest)
      `(let ([,(rkt-expr `(r ,r)) ,(rkt-expr v)])
         ,(rkt-fold-statements rest r-final))]
-    [(cons (list 'assignf r v) rest)
-     `(let ([,(rkt-expr `(r ,r)) ,(rkt-expr v)])
-        ,(rkt-fold-statements rest r-final))]
     ['() (rkt-expr `(r ,r-final))]))
