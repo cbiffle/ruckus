@@ -26,6 +26,8 @@ uniform int stepLimit;
 uniform bool showComplexity;
 uniform bool showDistance;
 
+out vec4 fragColor;
+
 float smin(float k, float a, float b) {
     float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
     return mix(b, a, h) - k * h * (1.0 - h);
@@ -214,7 +216,7 @@ void main() {
   vec4 complexity = falseColor(float(stepsTaken) / float(stepLimit));
   vec4 distance = falseColor(clamp(d / closeEnough, 0., 1.));
 
-  gl_FragColor = showComplexity ? complexity
-                                : showDistance ? distance : color;
+  fragColor = showComplexity ? complexity
+                             : showDistance ? distance : color;
 }
 
