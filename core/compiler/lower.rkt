@@ -51,40 +51,38 @@
 ; Primitive generators
 ;
 
-(define (generate-sphere node query)
+(define ((leaf-generator gen) node query)
   (let ([r (fresh-value)])
-    (code `(assignf ,r (sphere (cf ,(car (node-atts node))) (r ,query))))
+    (code `(assignf ,r ,(apply gen `(r ,query) (node-atts node))))
     r))
 
-(define (generate-half node query)
-  (let ([normal (first (node-atts node))]
-        [dist   (second (node-atts node))]
-        [d (fresh-value)])
-    (code `(assignf ,d (sub 1 (dot 3 (r ,query) (c3f ,normal)) (cf ,dist))))
-    d))
+(define generate-sphere
+  (leaf-generator
+    (lambda (query radius)
+      `(sphere (cf ,radius) ,query))))
 
-(define (generate-box node query)
-  (let ([corner (vec3-div (first (node-atts node)) 2)]
-        [d (fresh-value)])
-    (code `(assignf ,d (box (c3f ,corner) (r ,query))))
-    d))
+(define generate-half
+  (leaf-generator
+    (lambda (query normal dist)
+      `(sub 1 (dot 3 ,query (c3f ,normal)) (cf ,dist)))))
 
-(define (generate-interpolation-surface node query)
-  (define (sum-of-products solution)
-    (for/fold ([expr #f])
-              ([c (in-list solution)]
-              #:when (not (zero? (cdr c))))
-      (let ([prod `(mul 1
-                        (cf ,(cdr c))
-                        (length 3 (sub 3 (r ,query) (c3f ,(car c)))))])
-        (if expr
-          `(add 1 ,expr ,prod)
-          prod))))
+(define generate-box
+  (leaf-generator
+    (lambda (query size)
+      `(box (c3f ,(vec3-div size 2)) ,query))))
 
-  (let ([solution (first (node-atts node))]
-        [d (fresh-value)])
-    (code `(assignf ,d ,(sum-of-products solution)))
-    d))
+(define generate-interpolation-surface
+  (leaf-generator
+    (lambda (query solution)
+      (for/fold ([expr #f])
+                ([c (in-list solution)]
+                 #:when (not (zero? (cdr c))))
+        (let ([prod `(mul 1
+                          (cf ,(cdr c))
+                          (length 3 (sub 3 ,query (c3f ,(car c)))))])
+          (if expr
+            `(add 1 ,expr ,prod)
+            prod))))))
 
 ;
 ; Binary combinators
