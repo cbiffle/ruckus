@@ -27,6 +27,9 @@
 (define (glsl-proj v sym)
   (string-append (wrap v) "." (symbol->string sym)))
 
+(define (glsl-choose p a b)
+  (string-append (wrap p) " ? " (wrap a) " : " (wrap b)))
+
 (define (bin op a b)
   (string-append (wrap a) " " op " " (wrap b)))
 
@@ -41,12 +44,16 @@
     [(list 'c3f (vec3 x y z)) (glsl-vec3 x y z)]
     [(list 'c4f q) (glsl-quat q)]
     [(list 'cf x) (number->string (real->double-flonum x))]
+    [(list 'cu x) (string-append (number->string x) "u")]
 
     [(list 'sub _ a b) (bin "-" (glsl-expr a) (glsl-expr b))]
     [(list 'add _ a b) (bin "+" (glsl-expr a) (glsl-expr b))]
     [(list 'mul _ a b) (bin "*" (glsl-expr a) (glsl-expr b))]
     [(list 'length _ v) (fn "length" (glsl-expr v))]
     [(list 'dot _ a b) (fn "dot" (glsl-expr a) (glsl-expr b))]
+
+    [(list '< a b) (bin "<" (glsl-expr a) (glsl-expr b))]
+    [(list '> a b) (bin ">" (glsl-expr a) (glsl-expr b))]
 
     [(list 'abs a) (fn "abs" (glsl-expr a))]
     [(list 'max a b) (fn "max" (glsl-expr a) (glsl-expr b))]
@@ -59,16 +66,19 @@
     [(list 'vec3 a b) (fn "vec3" (glsl-expr a) (glsl-expr b))]
     [(list 'vec3 a b c) (fn "vec3" (glsl-expr a) (glsl-expr b) (glsl-expr c))]
     [(list 'proj _ v sym) (glsl-proj (glsl-expr v) sym)]
+    [(list 'choose p a b)
+     (glsl-choose (glsl-expr p) (glsl-expr a) (glsl-expr b))]
     [_ (error "bad expression passed to glsl-expr: " form)]))
 
 (define (glsl-stmt form)
   (match form
     [(list 'assignf r v) (decl "float" r v)]
+    [(list 'assignu r v) (decl "uint" r v)]
     [(list 'assign3f r v) (decl "vec3" r v)]
     [_ (error "bad statement passed to glsl-stmt: " form)]))
 
 (define (node->glsl n)
-  (let-values ([(r s) (generate-statements n)])
+  (let-values ([(r i s) (generate-statements n)])
     (append (list "float distanceField(vec3 r0) {")
             (map (lambda (st) (string-append "  " (glsl-stmt st)))
                  s)

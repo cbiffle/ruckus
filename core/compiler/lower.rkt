@@ -24,6 +24,8 @@
     (*next-value-number* (+ 1 v))
     v))
 
+(define (fresh-value-pair)
+  (values (fresh-value) (fresh-value)))
 
 ; ------------------------------------------------------------------------------
 ; Main generator dispatch.
@@ -52,9 +54,10 @@
 ;
 
 (define ((leaf-generator gen) node query)
-  (let ([r (fresh-value)])
-    (code `(assignf ,r ,(apply gen `(r ,query) (node-atts node))))
-    r))
+  (let-values ([(d i) (fresh-value-pair)])
+    (code `(assignf ,d ,(apply gen `(r ,query) (node-atts node))))
+    (code `(assignu ,i (cu ,(node-id node))))
+    (values d i)))
 
 (define generate-sphere
   (leaf-generator
@@ -88,26 +91,36 @@
 ; Binary combinators
 ;
 
-(define ((binary-combinator gen) node query)
+(define ((binary-combinator gen-d gen-i) node query)
   (unless (= 2 (length (node-children node)))
     (error "non-canonical node passed to generate:" (node-type node)))
 
-  (let* ([children (node-children node)]
-         [d1 (generate (first children) query)]
-         [d2 (generate (second children) query)]
-         [d12 (fresh-value)])
+  (let*-values ([(children) (node-children node)]
+                [(d1 i1) (generate (first children) query)]
+                [(d2 i2) (generate (second children) query)]
+                [(d12 i12) (fresh-value-pair)])
     (code `(assignf ,d12
-                    ,(apply gen `(r ,d1) `(r ,d2) (node-atts node))))
-    d12))
+                    ,(apply gen-d `(r ,d1) `(r ,d2) (node-atts node))))
+    (code `(assignu ,i12 (choose
+                           ,(apply gen-i `(r ,d1) `(r ,d2) (node-atts node))
+                           (r ,i1)
+                           (r ,i2))))
+    (values d12 i12)))
 
-(define generate-union (binary-combinator (lambda (x y) `(min ,x ,y))))
+(define generate-union
+  (binary-combinator
+    (lambda (x y) `(min ,x ,y))
+    (lambda (x y) `(,x . < . ,y))))
 
 (define generate-smooth-union
-  (binary-combinator (lambda (x y smooth)
-                       `(smin (cf ,smooth) ,x ,y))))
+  (binary-combinator
+    (lambda (x y smooth) `(smin (cf ,smooth) ,x ,y))
+    (lambda (x y smooth) `(,x . < . ,y))))
 
 (define generate-intersection
-  (binary-combinator (lambda (x y) `(max ,x ,y))))
+  (binary-combinator
+    (lambda (x y) `(max ,x ,y))
+    (lambda (x y) `(,x . > . ,y))))
 
 ;
 ; Unary post-transforms
@@ -117,11 +130,11 @@
   (unless (= 1 (length (node-children node)))
     (error "non-canonical node passed to generate:" (node-type node)))
 
-  (let* ([children (node-children node)]
-         [d (generate (first children) query)]
-         [new-d (fresh-value)])
+  (let*-values ([(children) (node-children node)]
+                [(d i) (generate (first children) query)]
+                [(new-d) (fresh-value)])
     (code `(assignf ,new-d ,(apply gen `(r ,d) (node-atts node))))
-    new-d))
+    (values new-d i)))
 
 (define generate-inverse
   (unary-post-combinator (lambda (d) `(sub 1 (cf 0) ,d))))
@@ -176,10 +189,10 @@
          [child (first (node-children node))]
          [rq `(r ,query)])
     (code `(assign3f ,tq ,(apply pre-gen rq atts)))
-    (let ([d (generate child tq)]
-          [d-corrected (fresh-value)])
+    (let-values ([(d i) (generate child tq)]
+                 [(d-corrected) (fresh-value)])
       (code `(assignf ,d-corrected ,(apply post-gen rq `(r ,d) atts)))
-      d-corrected)))
+      (values d-corrected i))))
 
 (define generate-scale
   (unary-bracket-combinator
@@ -243,17 +256,23 @@
       (code `(assign3f ,pq+ (add 3 (r ,pq) ,v))))
 
     ; Generate child geometry three times, sampling three different points.
-    (let ([d (generate (first children) pq)]
-          [d- (generate (first children) pq-)]
-          [d+ (generate (first children) pq+)]
-          [d-result (fresh-value)])
+    (let-values ([(d i) (generate (first children) pq)]
+                 [(d- i-) (generate (first children) pq-)]
+                 [(d+ i+) (generate (first children) pq+)]
+                 [(d-result i-result) (fresh-value-pair)])
       (code `(assignf ,d-result (min (r ,d) (min (r ,d-) (r ,d+)))))
-      d-result)))
+      (code `(assignu ,i-result
+                      (choose ((r ,d-result) . < . (r ,d+))
+                              (choose ((r ,d-result) . < . (r ,d-))
+                                      (r ,i)
+                                      (r ,i-))
+                              (r ,i+))))
+      (values d-result i-result))))
 
 (define (generate-statements node)
   (parameterize ([*statements* '()]
                  [*next-value-number* 0])
     (let ([canonical (first (canonicalize node))])
       (let*-values ([(_ enumerated) (enumerate-nodes 0 canonical)]
-                    [(r) (generate enumerated (fresh-value))])
-        (values r (reverse (*statements*)))))))
+                    [(d i) (generate enumerated (fresh-value))])
+        (values d i (reverse (*statements*)))))))

@@ -23,7 +23,7 @@
     [(list 'c3f (list x y z)) `(vec3 ,x ,y ,z)]
     [(list 'c3f (vec3 x y z)) `(vec3 ,x ,y ,z)]
     [(list 'c4f (quat s (vec3 x y z))) `(quat ,s (vec3 ,x ,y ,z))]
-    [(list 'cf x) x]
+    [(list (or 'cf 'cu) x) x]
 
     [(list 'sub 1 a b) `(- ,(rkt-expr a) ,(rkt-expr b))]
     [(list 'add 1 a b) `(+ ,(rkt-expr a) ,(rkt-expr b))]
@@ -37,11 +37,15 @@
 
     [(list 'abs a) `(abs ,(rkt-expr a))]
 
+    [(list '< a b) `(< ,(rkt-expr a) ,(rkt-expr b))]
+    [(list '> a b) `(> ,(rkt-expr a) ,(rkt-expr b))]
     [(list 'max a b) `(max ,(rkt-expr a) ,(rkt-expr b))]
     [(list 'min a b) `(min ,(rkt-expr a) ,(rkt-expr b))]
     [(list 'smin s a b) `(smooth-min ,(rkt-expr s) ,(rkt-expr a) ,(rkt-expr b))]
     [(list 'mod a b) `(real-mod ,(rkt-expr a) ,(rkt-expr b))]
     [(list 'qrot q v) `(quat-rotate ,(rkt-expr q) ,(rkt-expr v))]
+
+    [(list 'choose p a b) `(if ,(rkt-expr p) ,(rkt-expr a) ,(rkt-expr b))]
 
     [(list 'box c p) `(df-box ,(rkt-expr c) ,(rkt-expr p))]
     [(list 'sphere r p) `(df-sphere ,(rkt-expr r) ,(rkt-expr p))]
@@ -57,7 +61,7 @@
     [else (error "Unsupported projection for Racket mode:" sym)]))
 
 (define (node->rkt n)
-  (let-values ([(r s) (generate-statements n)])
+  (let-values ([(r i s) (generate-statements n)])
     `(lambda (r0) ,(rkt-fold-statements s r))))
 
 (define-runtime-module-path-index mpi-math "../math.rkt")
@@ -78,7 +82,7 @@
 
 (define (rkt-fold-statements statements r-final)
   (match statements
-    [(cons (list (or 'assignf 'assign3f) r v) rest)
+    [(cons (list (or 'assignf 'assignu 'assign3f) r v) rest)
      `(let ([,(rkt-expr `(r ,r)) ,(rkt-expr v)])
         ,(rkt-fold-statements rest r-final))]
     ['() (rkt-expr `(r ,r-final))]))

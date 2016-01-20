@@ -6,10 +6,11 @@
 
 (define (irdump path)
   (let*-values ([(gen) (load-frep path)]
-                [(r ss) (generate-statements (call-with-edsl-root gen))])
+                [(d i ss) (generate-statements (call-with-edsl-root gen))])
     (for ([s (in-list ss)])
       (pretty-write s))
-    (printf "Result in: ~a~n" r)))
+    (printf "Distance in: ~a~n" d)
+    (printf "ID in:       ~a~n" i)))
 
 (command-line
   #:program "irdump"
