@@ -17,7 +17,10 @@
   (let ([gen (load-frep path)])
     (unless (procedure? gen)
       (error "Design at" path "binds 'design', but not to a procedure."))
-    (node->glsl (call-with-edsl-root gen))))
+    (let ([node (call-with-edsl-root gen)])
+      (append
+        (node->glsl-distance node)
+        (node->glsl-disc node)))))
 
 (define (get-shader-parameter shader pname)
   (let ([v (s32vector 0)])

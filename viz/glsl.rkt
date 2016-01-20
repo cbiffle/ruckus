@@ -4,7 +4,9 @@
 ; figure out how to switch Racket into 3.3-core.  (Requesting a non-legacy
 ; GL context crashes.)
 
-(provide node->glsl)
+(provide
+  node->glsl-distance
+  node->glsl-disc)
 
 (require "../core/model.rkt")
 (require "../core/math.rkt")
@@ -77,7 +79,7 @@
     [(list 'assign3f r v) (decl "vec3" r v)]
     [_ (error "bad statement passed to glsl-stmt: " form)]))
 
-(define (node->glsl n)
+(define (node->glsl-distance n)
   (let-values ([(r i s) (generate-statements n)])
     (append (list "float distanceField(vec3 r0) {")
             (for/list ([st (in-list (prune-statements s r))])
@@ -85,3 +87,13 @@
             (list (string-append "  return r" (number->string r) ";"))
             (list "}")
             )))
+
+(define (node->glsl-disc n)
+  (let-values ([(r i s) (generate-statements n)])
+    (append (list "uint nearestNodeId(vec3 r0) {")
+            (for/list ([st (in-list (prune-statements s i))])
+              (string-append "  " (glsl-stmt st)))
+            (list (string-append "  return r" (number->string i) ";"))
+            (list "}")
+            )))
+

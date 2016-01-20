@@ -92,6 +92,26 @@ vec3 distanceFieldNormal(vec3 pos) {
 
 
 ////////////////////////////////////////////////////////////////////////////////
+// Object discrimination.
+
+// Prototype; generated at runtime and appended to this file.
+uint nearestNodeId(vec3 r0);
+
+vec3 matColor(uint nid) {
+  switch (nid % 4u) {
+    case 0u:
+      return vec3(1, 0, 0);
+    case 1u:
+      return vec3(0, 1, 0);
+    case 2u:
+      return vec3(0, 0, 1);
+    case 3u:
+      return vec3(1, 0, 1);
+  }
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
 // False-color visualization support.
 
 // Converts an HSV color to its RGB equivalent.  Generating false colors in
@@ -167,6 +187,7 @@ void main() {
     d = (distanceField(tpos) - ISOSURFACE) * zoom;
     if (d <= closeEnough) {
       // Hit!
+      uint nid = nearestNodeId(tpos);
       vec3 normal = distanceFieldNormal(tpos);
       vec3 nl_m = normalize(rLight);
       vec3 r_m = -reflect(nl_m, normal);
@@ -175,7 +196,7 @@ void main() {
       float diffuse = i_d * k_d * max(dot(nl_m, normal), 0.);
       float spec = i_s * k_s * pow(max(dot(r_m, toEye), 0.), alpha);
 
-      vec3 light = MAT_COLOR * (ambient + diffuse) + spec;
+      vec3 light = matColor(nid) * (ambient + diffuse) + spec;
       color = vec4(light, 1);
       break;
     } else {
