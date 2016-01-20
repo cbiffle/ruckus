@@ -2,7 +2,7 @@
 
 ; Lowering to pseudo-assembler.
 
-(provide generate-statements)
+(provide generate-statements prune-statements)
 
 (require "../model.rkt")
 (require "../math.rkt")
@@ -276,3 +276,29 @@
       (let*-values ([(_ enumerated) (enumerate-nodes 0 canonical)]
                     [(d i) (generate enumerated (fresh-value))])
         (values d i (reverse (*statements*)))))))
+
+(define (statement-dependencies st)
+  (expr-dependencies (third st)))
+
+(define (expr-dependencies e)
+  (if (pair? e)
+    (if (eq? 'r (first e))
+      ; It's a value name; return the corresponding singleton set.
+      (set (second e))
+      ; Otherwise it's a compound expression.
+      (foldl set-union (set) (map expr-dependencies e)))
+    ; Not a pair; no contribution.
+    (set)))
+
+(define (prune-statements statements result)
+  (define/match (helper st)
+    [('()) (values '() (set result))]
+    [((cons s ss))
+     (let-values ([(ss retained) (helper ss)])
+       (if (set-member? retained (second s))
+         (values (cons s ss)
+                 (set-union (statement-dependencies s) retained))
+         (values ss retained)))])
+
+  (let-values ([(ss _) (helper statements)])
+    ss))
