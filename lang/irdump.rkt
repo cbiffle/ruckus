@@ -1,6 +1,6 @@
 #lang racket
 
-(require "../core/compiler.rkt")
+(require "../core/compiler/lower.rkt")
 (require "./evaluator.rkt")
 (require "./loader.rkt")
 

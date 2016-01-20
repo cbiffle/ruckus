@@ -11,7 +11,7 @@
   surface->stl)
 
 (require "../core/math.rkt")
-(require "../core/compiler.rkt")
+(require "../core/compiler/racket.rkt")
 (require "../lang/evaluator.rkt")
 
 (define (surface->stl gen size q)
