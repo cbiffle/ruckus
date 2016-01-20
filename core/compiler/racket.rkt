@@ -20,10 +20,10 @@
   (match form
     [(list 'r n) (string->symbol (string-append "r" (number->string n)))]
 
-    [(list 'cv (list x y z)) `(vec3 ,x ,y ,z)]
-    [(list 'cv (vec3 x y z)) `(vec3 ,x ,y ,z)]
-    [(list 'cq (quat s (vec3 x y z))) `(quat ,s (vec3 ,x ,y ,z))]
-    [(list 'cs x) x]
+    [(list 'c3f (list x y z)) `(vec3 ,x ,y ,z)]
+    [(list 'c3f (vec3 x y z)) `(vec3 ,x ,y ,z)]
+    [(list 'c4f (quat s (vec3 x y z))) `(quat ,s (vec3 ,x ,y ,z))]
+    [(list 'cf x) x]
 
     [(list 'sub 1 a b) `(- ,(rkt-expr a) ,(rkt-expr b))]
     [(list 'add 1 a b) `(+ ,(rkt-expr a) ,(rkt-expr b))]
@@ -78,10 +78,10 @@
 
 (define (rkt-fold-statements statements r-final)
   (match statements
-    [(cons (list (or 'assigns 'assignv) r v) rest)
+    [(cons (list (or 'assignf 'assign3f) r v) rest)
      `(let ([,(rkt-expr `(r ,r)) ,(rkt-expr v)])
         ,(rkt-fold-statements rest r-final))]
-    [(cons (list 'assigns r v) rest)
+    [(cons (list 'assignf r v) rest)
      `(let ([,(rkt-expr `(r ,r)) ,(rkt-expr v)])
         ,(rkt-fold-statements rest r-final))]
     ['() (rkt-expr `(r ,r-final))]))

@@ -37,10 +37,10 @@
 (define (glsl-expr form)
   (match form
     [(list 'r n) (string-append "r" (number->string n))]
-    [(list 'cv (list x y z)) (glsl-vec3 x y z)]
-    [(list 'cv (vec3 x y z)) (glsl-vec3 x y z)]
-    [(list 'cq q) (glsl-quat q)]
-    [(list 'cs x) (number->string (real->double-flonum x))]
+    [(list 'c3f (list x y z)) (glsl-vec3 x y z)]
+    [(list 'c3f (vec3 x y z)) (glsl-vec3 x y z)]
+    [(list 'c4f q) (glsl-quat q)]
+    [(list 'cf x) (number->string (real->double-flonum x))]
 
     [(list 'sub _ a b) (bin "-" (glsl-expr a) (glsl-expr b))]
     [(list 'add _ a b) (bin "+" (glsl-expr a) (glsl-expr b))]
@@ -63,8 +63,8 @@
 
 (define (glsl-stmt form)
   (match form
-    [(list 'assigns r v) (decl "float" r v)]
-    [(list 'assignv r v) (decl "vec3" r v)]
+    [(list 'assignf r v) (decl "float" r v)]
+    [(list 'assign3f r v) (decl "vec3" r v)]
     [_ (error "bad statement passed to glsl-stmt: " form)]))
 
 (define (node->glsl n)
