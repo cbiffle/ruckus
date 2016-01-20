@@ -3,8 +3,10 @@
 ; Racket code generation.
 
 (provide
-  node->rkt
-  node->function)
+  node->distance-s-expr
+  node->distance-function
+  node->disc-s-expr
+  node->discriminator)
 
 (require racket/runtime-path)
 
@@ -60,15 +62,27 @@
     [(z) `(vec3-z ,v)]
     [else (error "Unsupported projection for Racket mode:" sym)]))
 
-(define (node->rkt n)
+(define (node->distance-s-expr n)
   (let-values ([(r i s) (generate-statements n)])
-    `(lambda (r0) ,(rkt-fold-statements s r))))
+    `(lambda (r0)
+       ,(rkt-fold-statements (prune-statements s r) r))))
+
+(define (node->disc-s-expr n)
+  (let-values ([(r i s) (generate-statements n)])
+    `(lambda (r0)
+       ,(rkt-fold-statements (prune-statements s i) i))))
+
+(define (node->distance-function n)
+  (eval-in-gen-env (node->distance-s-expr n)))
+
+(define (node->discriminator n)
+  (eval-in-gen-env (node->disc-s-expr n)))
 
 (define-runtime-module-path-index mpi-math "../math.rkt")
 (define-runtime-module-path-index mpi-df-prims "../df-prims.rkt")
 (define eval-modules (list mpi-math mpi-df-prims))
 
-(define (node->function n)
+(define (eval-in-gen-env s)
   (let ([ns (make-base-namespace)])
     (for ([m (in-list eval-modules)])
       (namespace-attach-module (current-namespace)
@@ -78,7 +92,7 @@
     (parameterize ([current-namespace ns])
       (for ([m (in-list eval-modules)])
         (namespace-require (module-path-index-resolve m)))
-      (eval (node->rkt n)))))
+      (eval s))))
 
 (define (rkt-fold-statements statements r-final)
   (match statements

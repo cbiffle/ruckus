@@ -196,7 +196,7 @@
 
 (define (outline->svg gen size q)
   (let* ([size2 (round-up-to-power-of-two (exact-ceiling (size . / . q)))]
-         [f (node->function (call-with-edsl-root gen))])
+         [f (node->distance-function (call-with-edsl-root gen))])
     (wrap-svg-document
       (size2 . * . q)
       (size2 . * . q)

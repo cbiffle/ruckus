@@ -17,7 +17,7 @@
 (define (surface->stl gen size q)
   (let* ([size2 (round-up-to-power-of-two (exact-ceiling (size . / . q)))]
          [size2/2 (size2 . / . 2)]
-         [f (node->function (call-with-edsl-root gen))])
+         [f (node->distance-function (call-with-edsl-root gen))])
     (sparse-polygonize-test
       f
       (- size2/2)
