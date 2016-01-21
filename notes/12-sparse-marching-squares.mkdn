@@ -1,0 +1,20 @@
+Idea: Sparse Marching Squares
+=============================
+
+
+Pseudocode algorithm:
+
+    (define (sparse-march f x y w h q q-diag)
+      (let ([field-at-center (f (+ x (/ w 2))
+                                (+ y (/ h 2))
+                                0)])
+        (when (field-at-center . < . q-diag)
+          ; There is a chance of finding an outline within this rectangle.
+          
+
+
+Figure out a bounding rectangle for the algorithm.  For now, this can come from
+the command line, though recording a bounding volume for the design would
+simplify things.
+
+

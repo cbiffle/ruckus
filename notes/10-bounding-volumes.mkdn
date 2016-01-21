@@ -1,0 +1,31 @@
+Should I track bounding volumes for geometry?  What would I use them for?
+
+
+Bounding spheres could provide a relatively cheap ray culling test.
+- Analytically intersect the ray with top-level geometry.
+  - If it misses, treat it like a hit on the far clip plane.
+  - This would improve performance somewhat for the common case where a fair
+    amount of background "sky" is visible.
+
+
+I'm not sure whether it would be useful for *sections* of geometry.  It would
+be nice to skip expensive distance field evaluations that don't contribute to
+the local distance field value; the far half of a union, for example.
+
+Seems tricky to compute reliably.  I can easily imagine cases where geometry at
+the near edge of a bounding sphere influences things more than geometry bound by
+a sphere containing the sample point, if that sphere is stretched by distant
+pieces.
+
+
+Also projection onto the XY plane could ignore geometry that doesn't intersect
+it.  (Though bounding spheres are conservative, so I'm not sure how often this
+would actually help.)
+
+
+I keep feeling like bounding spheres would be useful for analysis of e.g. extent
+along a plane or line, because -- like the near clipping plane in sphere tracing
+-- it would give a well-defined bound on the amount of inspection that would be
+required.
+
+

@@ -1,0 +1,9 @@
+It would be very nice to be able to inspect properties of the distance field.
+And possibly have them influence other parts of the field!
+
+It seems pretty easy to provide "virtual calipers" that, given a line through
+the model, measure the solid extent of the model along the line.  It could be
+done efficiently using sphere tracing, or analytically with a root finder.
+
+Measuring the extent along an axis but *not* necessarily along a single line
+seems harder... 
