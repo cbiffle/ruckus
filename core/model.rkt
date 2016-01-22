@@ -6,4 +6,4 @@
 ; ------------------------------------------------------------------------
 ; Basic data types.
 
-(struct node (type atts children id) #:transparent)
+(struct node (type atts children id color) #:transparent)

@@ -47,13 +47,15 @@
        (list (node 'box
                    (list (vec3 w h (max w h)))
                    '()
-                   #f)))]
+                   (node-id n)
+                   (node-color n))))]
     [(circle)
      (let ([r (first (node-atts n))])
        (list (node 'sphere
                    (list r)
                    '()
-                   #f)))]
+                   (node-id n)
+                   (node-color n))))]
     ))
 
 ; A canonical union node has exactly two children.  Unions of more than two
@@ -71,6 +73,7 @@
                                              (node 'union
                                                    '()
                                                    (rest children)
+                                                   #f
                                                    #f)))]))])))
 
 ; A canonical smooth union has exactly two children.  Unions of more than two
@@ -88,6 +91,7 @@
                                              (node 'smooth-union
                                                    (node-atts n)
                                                    (rest children)
+                                                   #f
                                                    #f)))]))])))
 
 ; A canonical intersection node has exactly two children.  Intersections of
@@ -105,6 +109,7 @@
                                              (node 'intersection
                                                    '()
                                                    (rest children)
+                                                   #f
                                                    #f)))]))])))
 
 ; Difference nodes get rewritten into intersections with inverse volumes.
@@ -113,6 +118,7 @@
     (node 'inverse
           '()
           (list n)
+          #f
           #f))
 
   (let ([children (node-children n)])
@@ -120,6 +126,7 @@
       (node 'intersection
             '()
             (apply list (first children) (map make-inverse (rest children)))
+            #f
             #f))))
 
 ; A canonical inverse has a single child.  Inverses of more than one child are
@@ -137,6 +144,7 @@
                                [children (canon-union (node 'union
                                                             '()
                                                             children
+                                                            #f
                                                             #f))]))])))
 
 ; A canonical translate has a single child.  Translations of more than one
@@ -163,6 +171,7 @@
                                [children (canon-union (node 'union
                                                             '()
                                                             children
+                                                            #f
                                                             #f))]))])))
 
 ; A canonical scale has a single child.  Scalings of more than one child are
@@ -189,6 +198,7 @@
                                [children (canon-union (node 'union
                                                             '()
                                                             children
+                                                            #f
                                                             #f))]))])))
 
 ; A canonical isolevel shift has a single child.  Isolevel shifts of more than
@@ -215,6 +225,7 @@
                                [children (canon-union (node 'union
                                                             '()
                                                             children
+                                                            #f
                                                             #f))]))])))
 
 ; A canonical extrude has a single child.  Extrusions of more than one
@@ -228,6 +239,7 @@
                                [children (canon-union (node 'union
                                                             '()
                                                             children
+                                                            #f
                                                             #f))]))])))
 
 ; A canonical repeat has a single child.  Repetitions of more than one
@@ -241,6 +253,7 @@
                                [children (canon-union (node 'union
                                                             '()
                                                             children
+                                                            #f
                                                             #f))]))])))
 
 ; A canonical mirror has a single child.  Mirrors of more than one
@@ -260,6 +273,7 @@
                                [children (canon-union (node 'union
                                                             '()
                                                             children
+                                                            #f
                                                             #f))]))])))
 
 ; A canonical rotate has a single child.  Rotations of more than one child are
@@ -282,4 +296,5 @@
                                [children (canon-union (node 'union
                                                             '()
                                                             children
+                                                            #f
                                                             #f))]))])))

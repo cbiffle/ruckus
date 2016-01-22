@@ -30,7 +30,7 @@
     (*stack* (cons parent2 (rest s)))))
 
 (define (begin-child type . atts)
-  (*stack* (cons (node type atts '() #f)
+  (*stack* (cons (node type atts '() #f #f)
                  (*stack*))))
 
 (define (end-child)
