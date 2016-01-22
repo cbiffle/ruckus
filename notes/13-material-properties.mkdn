@@ -1,0 +1,91 @@
+Now that I can discriminate objects in the spheretracer, let's give the objects
+material properties.
+
+Initially, without loss of generality, I'll discuss color.  The same approaches
+can be used to associate any numerical value with a surface, including
+reflectance properties, transparency, etc.
+
+
+Displaying Color
+================
+
+We need to establish a mapping from Node ID to Color that is accessible to the
+shader.  Array uniforms are one option, but they're limited in size.
+
+I'm more inclined to use a texture, which is the traditional way of mapping
+coordinates in some space to colors. :-)
+
+GL guarantees that a 2D texture can be up to 1024x1024 texels.  Drivers I've
+tested in practice allow at least 2048x2048.  1D textures only get the square
+root of that (the dimension constraint is the same, but there is only one
+dimension).
+
+So one possible realization might be:
+
+- Figure out the Node ID range in use by the current design.  Ideally, it will
+  be dense.
+
+- Choose a rectangular, power-of-two texture large enough to accommodate one
+  texel per Node ID, without too much waste.
+
+- Fill out a buffer of memory containing each node's color in the right
+  location.
+
+- Upload it to the card using e.g. `glTexImage2D`.
+
+- Map Node IDs to 2D coordinates in that texture, e.g. by assigning texels to
+  Node IDs in raster order and representing coordinates as (X, Y).
+
+- Alter the GLSL discriminator to deal in coordinates, either by changing its
+  code generation or by translating its output.  (The latter is likely cheaper.)
+
+- Use direct texel fetches in the shader to load the color for a Node ID by
+  coordinate.
+
+
+Assigning Color
+===============
+
+Currently, the EDSL knows nothing of color.  What would this look like,
+syntactically?
+
+    (union
+      (color 'red (sphere 100))
+      (color 'blue (cube 175)))
+
+...assuming that we want convenient symbolic aliases for common colors.
+
+Other color representations:
+- HTML/X: #xFF00FF
+- Component: '[1, 0, 1]
+
+
+Reducing Cardinality
+====================
+
+We do not, strictly speaking, need to distinguish *every* leaf node for the
+purposes of rendering.
+
+In the extreme, we could assign Node IDs to materials rather than nodes, and
+rewrite the nodes to have the corresponding Node ID.  This would use a single
+texel for e.g. all reddish surfaces.
+
+However, the Node ID scheme does double-duty for selection of portions of a
+design.  Collapsing it completely might interfere with that.
+
+Alternatively, the discriminator itself could return a material ID, which would
+be used to look up the color etc. in a normalized, smaller materials texture.
+This would scale better to large numbers of nodes and would likely make better
+use of texture cache.
+
+
+
+Avoiding a Texture
+==================
+
+It occurs to me that the discriminator could return the material properties
+directly, at the cost of embedding more constants in the shader code.  I have no
+idea the tradeoffs here or which approach would perform better.
+
+
+
