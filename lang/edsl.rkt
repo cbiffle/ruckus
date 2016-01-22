@@ -22,6 +22,7 @@
   extrude
   scale
   iso
+  color
 
   mirror-x
   mirror-y
@@ -159,6 +160,8 @@
 (define-syntax-rule (repeat-x period b bs ...)
   (call-with-repeat 'x period (lambda () b bs ...)))
 
+(define-syntax-rule (color c b bs ...)
+  (call-with-color c (lambda () b bs ...)))
 
 ; ------------------------------------------------------------------------
 ; Primitives and basic derived shapes.

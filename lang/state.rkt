@@ -6,6 +6,7 @@
 
 (provide
   call-with-empty-stack
+  call-with-color
   add-child-node
   begin-child
   end-child
@@ -16,10 +17,14 @@
 ; The node stack used during EDSL interpretation and initial AST building.
 
 (define *stack* (make-parameter '()))
+(define *color* (make-parameter #f))
 
 (define (call-with-empty-stack body)
   (parameterize ([*stack* '()])
     (body)))
+
+(define (call-with-color c body)
+  (parameterize ([*color* c]) (body)))
 
 (define (add-child-node c)
   (unless (node? c) (error "can't add bogus child node"))
@@ -30,7 +35,7 @@
     (*stack* (cons parent2 (rest s)))))
 
 (define (begin-child type . atts)
-  (*stack* (cons (node type atts '() #f #f)
+  (*stack* (cons (node type atts '() #f (*color*))
                  (*stack*))))
 
 (define (end-child)
