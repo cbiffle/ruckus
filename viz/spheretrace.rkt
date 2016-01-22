@@ -5,22 +5,65 @@
 (require (planet "rgl.rkt" ("stephanh" "RacketGL.plt" 1 4)))
 (require ffi/vector)
 
+(require "../core/compiler/enumerate.rkt")
 (require "../core/math.rkt")
+(require "../core/model.rkt")
 (require "../lang/evaluator.rkt")
 (require "../lang/loader.rkt")
 (require "./glsl.rkt")
 (require "./viewer.rkt")
 
 (define design-path #f)
+(define program #f)
+(define delete-program void)
+(define colors-texture #f)
+(define colors-buffer #f)
 
 (define (reload path)
   (let ([gen (load-frep path)])
     (unless (procedure? gen)
       (error "Design at" path "binds 'design', but not to a procedure."))
-    (let ([node (call-with-edsl-root gen)])
+    (let-values ([(_ node) (enumerate-nodes 0 (call-with-edsl-root gen))])
+      (update-colors-texture node)
       (append
         (node->glsl-distance node)
         (node->glsl-disc node)))))
+
+(define (update-colors-texture node)
+  (printf "Resetting texture colors...~n")
+  (for ([i (in-range (* 512 512 3))])
+    (bytes-set! colors-buffer i #x80))
+  (printf "Collecting node colors for texture...~n")
+  (collect-node-colors
+    node
+    (lambda (nid color)
+      (bytes-set! colors-buffer
+                  (* 3 nid)
+                  (exact-floor ((first color) . * . 255)))
+      (bytes-set! colors-buffer
+                  (+ 1 (* 3 nid))
+                  (exact-floor ((second color) . * . 255)))
+      (bytes-set! colors-buffer
+                  (+ 2 (* 3 nid))
+                  (exact-floor ((third color) . * . 255)))))
+  (glActiveTexture GL_TEXTURE0)
+  (glBindTexture GL_TEXTURE_2D colors-texture)
+  ; Yes, these parameters really need to be set, despite only using
+  ; texelFetch.
+  (glTexParameteri GL_TEXTURE_2D GL_TEXTURE_MAG_FILTER GL_NEAREST)
+  (glTexParameteri GL_TEXTURE_2D GL_TEXTURE_MIN_FILTER GL_NEAREST)
+  (glTexImage2D GL_TEXTURE_2D 0
+                GL_RGB
+                512 512 0 GL_RGB GL_UNSIGNED_BYTE
+                colors-buffer)
+  (printf "Texture updated.~n"))
+   
+(define (collect-node-colors node out-fn)
+  (when ((node-id node) . and . (node-color node))
+    (out-fn (node-id node) (node-color node)))
+
+  (for ([child (node-children node)])
+    (collect-node-colors child out-fn)))
 
 (define (get-shader-parameter shader pname)
   (let ([v (s32vector 0)])
@@ -70,12 +113,14 @@
         (printf "Marking program ~a for deletion.~n" program)
         (glDeleteProgram program)))))
 
-(define program #f)
-(define delete-program void)
-
 (define-runtime-path preamble-glsl "./preamble.glsl")
 
 (define (setup)
+  (unless colors-buffer
+    (set! colors-buffer (make-bytes (* 512 512 3))))
+  (unless colors-texture
+    (set! colors-texture (u32vector-ref (glGenTextures 1) 0)))
+
   (if (or (gl-version-at-least? '(2 0))
           (gl-has-extension? 'GL_ARB_shader_objects))
     (set!-values (program delete-program)
@@ -91,15 +136,13 @@
                width height
                0.0 height))
 
-  (define texcoord-array
-    (f64vector 0 0
-               0.5 0
-               0.5 0.5
-               0 0.5))
-
-
   (when program
     (glUseProgram program)
+
+    (glActiveTexture GL_TEXTURE0)
+    (glBindTexture GL_TEXTURE_2D colors-texture)
+    (let ([u (glGetUniformLocation program "nodeColors")])
+      (glUniform1i u 0))
 
     (let ([zU (glGetUniformLocation program "zoom")])
       (glUniform1f zU (real->double-flonum zoom)))
@@ -134,16 +177,12 @@
   ; 1. Here is an array I'd like you to draw...
   (let-values (((type cptr) (gl-vector->type/cpointer vertex-array)))
     (glVertexPointer 2 type 0 cptr))
-  (let-values (((type cptr) (gl-vector->type/cpointer texcoord-array)))
-    (glTexCoordPointer 2 type 0 cptr))
   ; 2. Yes, I really want you to use it, I was not simply fooling around.
   (glEnableClientState GL_VERTEX_ARRAY)
-  (glEnableClientState GL_TEXTURE_COORD_ARRAY)
   ; 3. Allright, now draw the silly thing already!
   (glDrawArrays GL_QUADS 0 4)
 
   ; Clean up state.
-  (glDisableClientState GL_TEXTURE_COORD_ARRAY)
   (glDisableClientState GL_VERTEX_ARRAY)
   (when program
     (glUseProgram 0)))

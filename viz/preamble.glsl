@@ -25,6 +25,7 @@ uniform float closeEnough;
 uniform int stepLimit;
 uniform bool showComplexity;
 uniform bool showDistance;
+uniform sampler2D nodeColors;
 
 out vec4 fragColor;
 
@@ -100,16 +101,7 @@ vec3 distanceFieldNormal(vec3 pos) {
 uint nearestNodeId(vec3 r0);
 
 vec3 matColor(uint nid) {
-  switch (nid % 4u) {
-    case 0u:
-      return vec3(1, 0, 0);
-    case 1u:
-      return vec3(0, 1, 0);
-    case 2u:
-      return vec3(0, 0, 1);
-    case 3u:
-      return vec3(1, 0, 1);
-  }
+  return texelFetch(nodeColors, ivec2(nid % 512u, nid / 512u), 0).rgb;
 }
 
 
