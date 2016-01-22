@@ -65,6 +65,10 @@
     [(list 'qrot q v) (fn "qrot" (glsl-expr q) (glsl-expr v))]
     [(list 'box c p) (fn "dfBox" (glsl-expr c) (glsl-expr p))]
     [(list 'sphere r p) (fn "dfSphere" (glsl-expr r) (glsl-expr p))]
+    [(list 'capsule h r p) (fn "dfCapsule"
+                               (glsl-expr h)
+                               (glsl-expr r)
+                               (glsl-expr p))]
     [(list 'vec3 a b) (fn "vec3" (glsl-expr a) (glsl-expr b))]
     [(list 'vec3 a b c) (fn "vec3" (glsl-expr a) (glsl-expr b) (glsl-expr c))]
     [(list 'proj _ v sym) (glsl-proj (glsl-expr v) sym)]

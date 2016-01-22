@@ -36,6 +36,7 @@
     [(half)   (generate-half node query)]
     [(box)   (generate-box node query)]
     [(interpolation-surface) (generate-interpolation-surface node query)]
+    [(capsule) (generate-capsule node query)]
     [(union root)  (generate-union node query)]
     [(smooth-union)  (generate-smooth-union node query)]
     [(intersection)  (generate-intersection node query)]
@@ -63,6 +64,11 @@
   (leaf-generator
     (lambda (query radius)
       `(sphere (cf ,radius) ,query))))
+
+(define generate-capsule
+  (leaf-generator
+    (lambda (query height radius)
+      `(capsule (cf ,(height . / . 2)) (cf ,radius) ,query))))
 
 (define generate-half
   (leaf-generator

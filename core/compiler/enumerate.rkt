@@ -17,7 +17,7 @@
   (let*-values ([(next-id children) (enumerate-children next-id n)]
                 [(n) (struct-copy node n [children children])])
     (case (node-type n)
-      [(sphere half box interpolation-surface)
+      [(sphere half box interpolation-surface capsule)
        (values
          (+ 1 next-id)
          (struct-copy node n

@@ -71,6 +71,12 @@ float dfBox(vec3 corner, vec3 p) {
        + length(max(d, 0.));
 }
 
+float dfCapsule(float halfh, float r, vec3 q) {
+  q = abs(q);
+  float t = clamp((q.z * halfh) / (halfh * halfh), 0.0, 1.0);
+  return length(q - vec3(0, 0, halfh * t)) - r;
+}
+  
 
 ////////////////////////////////////////////////////////////////////////////////
 // Global distance field evaluator.

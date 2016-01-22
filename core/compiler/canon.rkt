@@ -29,7 +29,7 @@
       [(extrude) (canon-extrude n)]
       [(repeat) (canon-repeat n)]
       [(mirror) (canon-mirror n)]
-      [(sphere half box interpolation-surface) (list n)]
+      [(sphere half box interpolation-surface capsule) (list n)]
       [(rect circle) (canon-2d n)]
       [else (error "unknown node type in canonicalize: " (node-type n))])))
 

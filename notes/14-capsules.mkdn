@@ -1,0 +1,49 @@
+I need a capsule primitive for my next steps.  How should it work?
+
+Quilez's general capsule is given by:
+
+    float sdCapsule(vec3 p, vec3 a, vec3 b, float r) {
+      vec3 pa = p - a, ba = b - a;
+      float h = clamp( dot(pa,ba)/dot(ba,ba), 0.0, 1.0 );
+      return length( pa - ba*h ) - r;
+    }
+
+...where 'p' is the query point, 'a' and 'b' are the endpoints, and 'r' is the
+radius.
+
+(Source: http://iquilezles.org/www/articles/distfunctions/distfunctions.htm)
+
+If we fix the 'a' endpoint as the origin, the evaluator simplifies:
+
+    float sdCapsule(vec3 p, vec3 b, float r) {
+      float h = clamp(dot(p, b) / dot(b, b), 0.0, 1.0 );
+      return length(p - b * h) - r;
+    }
+
+But having an arbitrary non-origin endpoint isn't typical of primitives in this
+system right now.  Having a height and radius, and an implied centerline as one
+of the axes (say, Z), would be more traditional.  (Not that this is necessarily
+good!)  How would such an evaluator work?
+
+Consider that fixing the centerline on the Z axis implies that
+
+    b = vec3(0, 0, h);
+
+for some height h.  Simplifying the vector operations on that known vector, we
+get:
+
+    float sdCapsule(vec3 p, float h, float r) {
+      float t = clamp((p.z * h) / (h * h), 0.0, 1.0 );
+      return length(p - vec3(0, 0, h * t)) - r;
+    }
+
+Making it symmetric around the XY plane means taking half the height as a
+parameter and taking the query point's absolute value:
+
+    float sdCapsule(vec3 p, float halfh, float r) {
+      vec3 pAbs = abs(p);
+      float t = clamp((pAbs.z * halfh) / (halfh * halfh), 0.0, 1.0 );
+      return length(pAbs - vec3(0, 0, halfh * t)) - r;
+    }
+
+

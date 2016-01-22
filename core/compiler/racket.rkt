@@ -51,6 +51,9 @@
 
     [(list 'box c p) `(df-box ,(rkt-expr c) ,(rkt-expr p))]
     [(list 'sphere r p) `(df-sphere ,(rkt-expr r) ,(rkt-expr p))]
+    [(list 'capsule h r p) `(df-capsule ,(rkt-expr h)
+                                        ,(rkt-expr r)
+                                        ,(rkt-expr p))]
     [(list 'vec3 a b c) `(vec3 ,(rkt-expr a) ,(rkt-expr b) ,(rkt-expr c))]
     [(list 'proj 3 v sym) (rkt-proj (rkt-expr v) sym)] ; TODO
     [_ (error "bad expression passed to rkt-expr: " form)]))

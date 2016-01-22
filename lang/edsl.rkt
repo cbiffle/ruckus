@@ -32,6 +32,7 @@
 
   sphere
   rects
+  capsule
   cube
   half-space
   rect
@@ -174,6 +175,9 @@
 
 (define (rects sx sy sz)
   (add-child 'box (vec3 sx sy sz)))
+
+(define (capsule height radius)
+  (add-child 'capsule height radius))
 
 (define (cube s)
   (rects s s s))
