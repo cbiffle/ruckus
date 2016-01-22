@@ -84,14 +84,13 @@
 
 (define (eval-in-gen-env s)
   (let ([ns (make-base-namespace)])
-    (for ([m (in-list eval-modules)])
-      (namespace-attach-module (current-namespace)
-                               (module-path-index-resolve m)
-                               ns))
+    (namespace-attach-module (current-namespace)
+                             (module-path-index-resolve mpi-math)
+                             ns)
 
     (parameterize ([current-namespace ns])
-      (for ([m (in-list eval-modules)])
-        (namespace-require (module-path-index-resolve m)))
+      (namespace-require (module-path-index-resolve mpi-math))
+      (namespace-require (resolved-module-path-name (module-path-index-resolve mpi-df-prims)))
       (eval s))))
 
 (define (rkt-fold-statements statements r-final)

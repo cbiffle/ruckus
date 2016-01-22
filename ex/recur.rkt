@@ -9,14 +9,15 @@
 ; gets single-digit frame rates.
 
 (require racket)
-(require "compiler.rkt")
-(require "math.rkt")
+(require "./core/compiler/racket.rkt")
+(require "./core/math.rkt")
+(require "./lang/evaluator.rkt")
 
 (define threshold -10)
 
 (define (design)
-  (let ([df (node->function (call-with-edsl-root subordinate))])
-    (for ([i 500])
+  (let ([df (node->distance-function (call-with-edsl-root subordinate))])
+    (for ([i 40])
       (let* ([x (- (* 600 (random)) 300)]
              [y (- (* 600 (random)) 300)]
              [z (- (* 600 (random)) 300)]
