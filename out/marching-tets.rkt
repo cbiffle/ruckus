@@ -40,31 +40,43 @@
 ; ------------------------------------------------------------------------------
 ; STL generation.
 
-; Wrapper for 'sparse-polygonize' (below) that produces ASCII STL.
+; Wrapper for 'sparse-polygonize' (below) that produces binary STL to the
+; 'current-output-port'.  (Which needs to be a file, because we'll try to seek
+; it.)
 (define (sparse-polygonize-stl f x y z side q)
-  (displayln "solid")
+  ; STL header.
+  (write-bytes (make-bytes 80 32))
+  ; Placeholder for number-of-triangles, TBD.
+  (write-bytes (make-bytes 4 0))
+  (define triangle-count 0)
+
+  ; Polygonize...
   (sparse-polygonize f x y z side q
               (lambda (tri)
+                ; Compute the cross product so we can find the face normal.
                 (let* ([ba (vec3-sub (second tri) (first tri))]
                        [ca (vec3-sub (third tri) (first tri))]
                        [cross (vec3-cross ba ca)])
+                  ; Omit degenerate triangles (zero-length cross).
                   (unless (zero? (vec3-length cross))
-                    (stl-vertex-or-normal
-                      "facet normal"
-                      (vec3-normalize cross))
-                    (printf "outer loop~n")
+                    (set! triangle-count (add1 triangle-count))
+                    ; Binary STL format consists of:
+                    ; The normal vector
+                    (stl-write-vector (vec3-normalize cross))
+                    ; Three corner vectors
                     (for ([p (in-list tri)])
-                      (stl-vertex-or-normal "vertex" p))
-                    (printf "endloop~nendfacet~n")))))
-  (displayln "endsolid"))
+                      (stl-write-vector p))
+                    ; A two-byte field that nobody can agree on.
+                    (write-byte 0)
+                    (write-byte 0)))))
+  ; Return to the length and fill in our final tally.
+  (file-position (current-output-port) 80)
+  (write-bytes (integer->integer-bytes triangle-count 4 #f )))
 
-; Produces an ASCII STL vector from a 'vec3', labeled as 'kind'.
-(define (stl-vertex-or-normal kind v)
-  (printf "~a ~a ~a ~a~n"
-          kind
-          (real->double-flonum (vec3-x v))
-          (real->double-flonum (vec3-y v))
-          (real->double-flonum (vec3-z v))))
+(define (stl-write-vector v)
+  (write-bytes (real->floating-point-bytes (vec3-x v) 4 #f))
+  (write-bytes (real->floating-point-bytes (vec3-y v) 4 #f))
+  (write-bytes (real->floating-point-bytes (vec3-z v) 4 #f)))
 
 
 ; ------------------------------------------------------------------------------
