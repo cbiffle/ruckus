@@ -7,18 +7,28 @@
 ; algorithm as my 2D outline extractor, with similar performance
 ; characteristics.
 
-(provide
-  surface->stl)
+(provide surface->stl)
 
 (require "../core/math.rkt")
 (require "../core/compiler/racket.rkt")
 (require "../lang/evaluator.rkt")
 
+; ------------------------------------------------------------------------------
+; Entry point.
+
+; Takes an unevaluated design generator 'gen', a region of interest size
+; 'size', and a quantum 'q' and generates STL for any surfaces within the ROI.
+;
+; Both 'size' and 'q' are given in the same (design) units.
+;
+; Output is to 'current-output-port'.
 (define (surface->stl gen size q)
+  ; The sparse algorithm requires power-of-two region sizes measured in units of
+  ; 'q'.  Round the ROI size up to ensure this.
   (let* ([size2 (round-up-to-power-of-two (exact-ceiling (size . / . q)))]
          [size2/2 (size2 . / . 2)]
          [f (node->distance-function (call-with-edsl-root gen))])
-    (sparse-polygonize-test
+    (sparse-polygonize-stl
       f
       (- size2/2)
       (- size2/2)
@@ -26,7 +36,12 @@
       size2
       q)))
 
-(define (sparse-polygonize-test f x y z side q)
+
+; ------------------------------------------------------------------------------
+; STL generation.
+
+; Wrapper for 'sparse-polygonize' (below) that produces ASCII STL.
+(define (sparse-polygonize-stl f x y z side q)
   (displayln "solid")
   (sparse-polygonize f x y z side q
               (lambda (tri)
@@ -43,6 +58,35 @@
                     (printf "endloop~nendfacet~n")))))
   (displayln "endsolid"))
 
+; Produces an ASCII STL vector from a 'vec3', labeled as 'kind'.
+(define (stl-vertex-or-normal kind v)
+  (printf "~a ~a ~a ~a~n"
+          kind
+          (real->double-flonum (vec3-x v))
+          (real->double-flonum (vec3-y v))
+          (real->double-flonum (vec3-z v))))
+
+
+; ------------------------------------------------------------------------------
+; Sparse descent algorithm.
+
+; Divides space recursively into cubes, emitting triangles once the cubes reach
+; one quantum 'q' in size.
+;
+; This algorithm assumes that 'f' is Lipschitz for L=1, meaning that it acts as
+; a signed distance bound.  Given this, it can triangulate a surface of N
+; triangles occupying V quanta of space in O(N log V) time.
+;
+; 'x', 'y', and 'z' give the "bottom" (most negative) corner of the cube being
+; considered, on each axis.  These are in units of 'q'.
+;
+; 'side' is the length of any side of the cube, measured in units of 'q'.
+;
+; 'q' is the triangulation quantum, in design units.  Smaller values produce
+; higher quality at cost roughly proportional to the inverse square.
+;
+; 'out-fn' is a function of one argument that will be called for each discovered
+; triangle.
 (define (sparse-polygonize f x y z side q out-fn)
   (if (= 1 side)
     ; Descent completed, run the basic algorithm.
@@ -64,41 +108,20 @@
         (sparse-polygonize f    x      (+ y s/2) (+ z s/2) s/2 q out-fn)
         (sparse-polygonize f (+ x s/2) (+ y s/2) (+ z s/2) s/2 q out-fn)))))
 
-(define (polygonize-test f sx sy sz ex ey ez size)
-  (displayln "solid")
-  (polygonize f sx sy sz ex ey ez size
-              (lambda (tri)
-                (let* ([ba (vec3-sub (second tri) (first tri))]
-                       [ca (vec3-sub (third tri) (first tri))]
-                       [cross (vec3-cross ba ca)])
-                  (unless (zero? (vec3-length cross))
-                    (stl-vertex-or-normal
-                      "facet normal"
-                      (vec3-normalize cross))
-                    (printf "outer loop~n")
-                    (for ([p (in-list tri)])
-                      (stl-vertex-or-normal "vertex" p))
-                    (printf "endloop~nendfacet~n")))))
-  (displayln "endsolid"))
 
-(define (stl-vertex-or-normal kind v)
-  (printf "~a ~a ~a ~a~n"
-          kind
-          (real->double-flonum (vec3-x v))
-          (real->double-flonum (vec3-y v))
-          (real->double-flonum (vec3-z v))))
+; ------------------------------------------------------------------------------
+; Cube division into tetrahedra and core triangulation routine.
 
-(define (polygonize f sx sy sz ex ey ez size out-fn)
-  (for* ([x (in-range sx ex size)]
-         [y (in-range sy ey size)]
-         [z (in-range sz ey size)])
-    (polygonize-cube f (vec3 x y z) size out-fn)))
-
+; Describes a cube being triangulated.  'points' and 'values' are both vectors
+; of equal length, containing the vertices and field values, respectively.
 (struct grid-cell (points values) #:transparent)
 
+; Convenience accessors for getting the point and value by index.
 (define (g-point-ref gc idx) (vector-ref (grid-cell-points gc) idx))
 (define (g-value-ref gc idx) (vector-ref (grid-cell-values gc) idx))
 
+; Processes a cube with most negative vertex 'corner' and size 'size', both in
+; design units.  Calls 'out-fn' with each triangle discovered.
 (define (polygonize-cube f corner size out-fn)
   (let* ([corners (vector corner
                           (vec3-add corner (vec3 size 0 0))
@@ -115,8 +138,7 @@
     (polygonize-tet gc 0 4 6 7 out-fn)
     (polygonize-tet gc 0 6 1 2 out-fn)
     (polygonize-tet gc 0 6 4 1 out-fn)
-    (polygonize-tet gc 5 6 1 4 out-fn)
-    ))
+    (polygonize-tet gc 5 6 1 4 out-fn)))
 
 ; Finds zero, one, or two triangles that describe the contour of a sampled
 ; field within one tetrahedral division of a sampling cube.  The cube's corners
@@ -173,6 +195,8 @@
                 v3 v2
                 v3 v0))])))
 
+; Translates field levels at four corners of a tetrahedron into a binary
+; occupancy code.
 (define (triindex g a b c d)
   (+ (if (occupied? (g-value-ref g a)) 1 0)
      (if (occupied? (g-value-ref g b)) 2 0)
@@ -181,6 +205,10 @@
 
 (define (occupied? val) (negative? val))
 
+; Creates a triangle whose corners fall on the edges a-b, c-d, and e-f, given
+; as vertex indices within the grid-cell 'g'.  The position of the vertices on
+; each edge is determined by interpolation using the field values at each
+; vertex, to approximate the location of the root.
 (define ((verp-tri g) a b c d e f)
   (list (verp (g-point-ref g a) (g-point-ref g b)
               (g-value-ref g a) (g-value-ref g b))
@@ -189,6 +217,9 @@
         (verp (g-point-ref g e) (g-point-ref g f)
               (g-value-ref g e) (g-value-ref g f))))
 
+; Interpolates between two vertices using their field values.  'p1' and 'p2' are
+; the coordinates of two vertices, in design units.  'val1' and 'val2' are the
+; corresponding field values.
 (define (verp p1 p2 val1 val2)
   (let ([mu ((0 . - . val1) . / . (val2 . - . val1))])
     (vec3-add p1 (vec3-mul (vec3-sub p2 p1) mu))))
