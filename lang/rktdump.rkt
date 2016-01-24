@@ -13,13 +13,17 @@
 
 (command-line
   #:program "rktdump"
-  #:once-each
-  [("-m" "--mode")
-   mode-str
-   "Select mode for generated code: distance (default) or id."
-   (case mode-str
-     [("distance") (set! make-s-expr node->distance-s-expr)]
-     [("id") (set! make-s-expr node->disc-s-expr)]
-     [else (error "Bad mode value:" mode-str)])]
-  #:args (path)
-  (rktdump path))
+
+  #:usage-help
+  "Dumps the Racket expression describing a design mathematically."
+
+  #:once-any
+  [("-d" "--distance")
+   "Generate distance field evaluator code (default)."
+   (set! make-s-expr node->distance-s-expr)]
+  [("-i" "--id")
+   "Generate node ID discriminator code."
+     (set! make-s-expr node->disc-s-expr)]
+
+  #:args (design-path)
+  (rktdump design-path))

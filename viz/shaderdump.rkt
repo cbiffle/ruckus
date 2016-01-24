@@ -13,13 +13,17 @@
 
 (command-line
   #:program "shaderdump"
-  #:once-each
-  [("-m" "--mode")
-   mode-str
-   "Select shader mode: distance or id"
-   (case mode-str
-     [("distance") (set! compiler node->glsl-distance)]
-     [("id") (set! compiler node->glsl-disc)]
-     [else (error "bad mode value:" mode-str)])]
-  #:args (path)
-  (shaderdump path))
+
+  #:usage-help
+  "Prints the GLSL code equivalent of a design.  Mostly useful for debugging."
+
+  #:once-any
+  [("-d" "--distance")
+   "Generate shader in distance field evaluator mode (default)."
+   (set! compiler node->glsl-distance)]
+  [("-i" "--id")
+   "Generate shader in ID discrimination mode."
+   (set! compiler node->glsl-disc)]
+
+  #:args (design-path)
+  (shaderdump design-path))

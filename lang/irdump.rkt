@@ -4,27 +4,29 @@
 (require "./evaluator.rkt")
 (require "./loader.rkt")
 
-(define prune-discriminator #f)
+(define pruner (lambda (ss d) ss))
+(define pruning #f)
 
 (define (irdump path)
   (let*-values ([(gen) (load-frep path)]
                 [(d i ss) (generate-statements (call-with-edsl-root gen))])
-    (if prune-discriminator
-      (begin
-        (for ([s (in-list (prune-statements ss d))])
-          (pretty-write s))
-        (printf "Distance in: ~a~n" d))
-      (begin
-        (for ([s (in-list ss)])
-          (pretty-write s))
-        (printf "Distance in: ~a~n" d)
-        (printf "ID in:       ~a~n" i)))))
+    (for ([s (in-list (pruner ss d))])
+      (pretty-write s))
+    (printf "Distance in: ~a~n" d)
+    (unless pruning (printf "ID in:       ~a~n" i))))
 
 (command-line
   #:program "irdump"
+
+  #:usage-help
+  "Dumps the internal compiler IR for a design."
+
   #:once-each
   [("-p" "--prune")
    "Prune node discrimination code."
-   (set! prune-discriminator #t)]
-  #:args (path)
-  (irdump path))
+   (begin
+     (set! pruning #t)
+     (set! pruner prune-statements))]
+
+  #:args (design-path)
+  (irdump design-path))

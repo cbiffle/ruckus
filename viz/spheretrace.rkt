@@ -289,5 +289,16 @@
 
 (command-line
   #:program "spheretrace"
-  #:args (path)
-  (spheretrace path))
+
+  #:usage-help
+  "Displays a design interactively using ray-tracing."
+
+  #:ps
+  ""
+  "Keyboard/mouse usage:"
+  "- Drag with the mouse to rotate the design."
+  "- Scroll wheel / gesture zooms."
+  "- F5 reloads and recompiles any changes to the design."
+
+  #:args (design-path)
+  (spheretrace design-path))
