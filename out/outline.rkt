@@ -22,6 +22,8 @@
   [("-q" "--quantum") q
                       "Quantize space into <q>-sized chunks."
                       (set! design-quantum (string->number q))]
-  #:args (path)
-  (begin
-    (outline->svg (load-frep path) design-size design-quantum)))
+  #:args (path out)
+  (call-with-output-file out #:exists 'replace
+    (lambda (f)
+      (parameterize ([current-output-port f])
+        (outline->svg (load-frep path) design-size design-quantum)))))
