@@ -18,9 +18,6 @@
   vec3-abs
   vec3-mul
   vec3-div
-  vec3-x
-  vec3-y
-  vec3-z
 
   (struct-out quat)
   quat-identity-rotation
