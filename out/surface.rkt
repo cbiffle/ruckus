@@ -7,6 +7,7 @@
 ; For command-line usage, see the end of this file or run with '--help'.
 
 (require "../lang/loader.rkt")
+(require "./binary-stl.rkt")
 (require "./marching-tets.rkt")
 
 ; Knobs controlled from the command line, with default values:
@@ -40,4 +41,7 @@
   (call-with-output-file output-path #:exists 'replace
     (lambda (f)
       (parameterize ([current-output-port f])
-        (surface->stl (load-frep design-path) design-size design-quantum)))))
+        (surface->stl (load-frep design-path)
+                      design-size
+                      design-quantum
+                      cube->tets)))))
