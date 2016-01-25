@@ -193,7 +193,10 @@
 ; assumed to be unions of the children and rewritten thus.
 ;
 ; Immediately nested rotations are combined through quaternion multiplication.
+;
+; Identity rotations are recognized, as long as they're exactly identity, and
+; eliminated.
 (define canon-rotate (unary-canon+
                        'rotate
                        (lambda (a b) (list (quat-mul (first a) (first b))))
-                       (lambda (r) #f)))
+                       (lambda (r) (equal? (quat-identity-rotation) r))))
