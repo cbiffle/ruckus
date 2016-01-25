@@ -108,16 +108,9 @@
 ; each edge is determined by interpolation using the field values at each
 ; vertex, to approximate the location of the root.
 (define ((verp-tri g) a b c d e f)
-  (list (verp (g-point-ref g a) (g-point-ref g b)
-              (g-value-ref g a) (g-value-ref g b))
-        (verp (g-point-ref g c) (g-point-ref g d)
-              (g-value-ref g c) (g-value-ref g d))
-        (verp (g-point-ref g e) (g-point-ref g f)
-              (g-value-ref g e) (g-value-ref g f))))
-
-; Interpolates between two vertices using their field values.  'p1' and 'p2' are
-; the coordinates of two vertices, in design units.  'val1' and 'val2' are the
-; corresponding field values.
-(define (verp p1 p2 val1 val2)
-  (let ([mu (val1 . / . (val1 . - . val2))])
-    (vec3-add p1 (vec3-mul (vec3-sub p2 p1) mu))))
+  (list (vec3-linear-root (g-point-ref g a) (g-value-ref g a)
+                          (g-point-ref g b) (g-value-ref g b))
+        (vec3-linear-root (g-point-ref g c) (g-value-ref g c)
+                          (g-point-ref g d) (g-value-ref g d))
+        (vec3-linear-root (g-point-ref g e) (g-value-ref g e)
+                          (g-point-ref g f) (g-value-ref g f))))

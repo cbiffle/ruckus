@@ -18,6 +18,7 @@
   vec3-abs
   vec3-mul
   vec3-div
+  vec3-linear-root
 
   (struct-out quat)
   quat-identity-rotation
@@ -84,6 +85,13 @@
                            (abs (vec3-z v))))
 
 (define (vec3-normalize v) (vec3-div v (vec3-length v)))
+
+; Given two vectors and their corresponding field values, projects the line
+; through the vectors to find the location of the root (zero field value).
+; This is useful in triangle interpolation.
+(define (vec3-linear-root p1 val1 p2 val2)
+  (let ([t0 (val1 . / . (val1 . - . val2))])
+    (vec3-add p1 (vec3-mul t0 (vec3-sub p2 p1)))))
 
 ; ------------------------------------------------------------------------------
 ; Quaternions.  I use the scalar+vector representation of quaternions, where
