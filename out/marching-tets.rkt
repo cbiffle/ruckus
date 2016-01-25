@@ -6,7 +6,7 @@
 ; This doesn't contain the actual "marching" portion, only the code to generate
 ; triangles for a cube of space.
 
-(provide cube->tets)
+(provide marching-tets)
 
 (require "../core/math.rkt")
 
@@ -20,7 +20,7 @@
 
 ; Processes a cube with most negative vertex 'corner' and size 'size', both in
 ; design units.  Calls 'out-fn' with each triangle discovered.
-(define (cube->tets f corner size out-fn)
+(define (marching-tets f corner size out-fn)
   (let* ([corners (vector corner                                      ; 0
                           (vec3-add corner (vec3 size 0    0))        ; 1
                           (vec3-add corner (vec3 size size 0))        ; 2

@@ -9,10 +9,12 @@
 (require "../lang/loader.rkt")
 (require "./binary-stl.rkt")
 (require "./marching-tets.rkt")
+(require "./marching-cubes.rkt")
 
 ; Knobs controlled from the command line, with default values:
 (define design-size 1000)    ; size of cubic ROI to consider
 (define design-quantum 1)   ; size of quantum for terminal contour
+(define polygonizer marching-cubes)
 
 (command-line
   #:program "surface"
@@ -37,6 +39,16 @@
     "general, halving the <q> value increases processing time 4x.")
    (set! design-quantum (string->number q))]
 
+  #:help-labels "--- triangulation methods ---"
+
+  #:once-any
+  [("-c" "--cubes")
+   "Use marching cubes."
+   (set! polygonizer marching-cubes)]
+  [("-t" "--tets")
+   "Use marching tetrahedra."
+   (set! polygonizer marching-tets)]
+
   #:args (design-path output-path)
   (call-with-output-file output-path #:exists 'replace
     (lambda (f)
@@ -44,4 +56,4 @@
         (surface->stl (load-frep design-path)
                       design-size
                       design-quantum
-                      cube->tets)))))
+                      polygonizer)))))
