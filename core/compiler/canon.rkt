@@ -38,7 +38,8 @@
 (define (canon-root n)
   (canon-union (struct-copy node n [type 'union])))
 
-; 2D primitives are inflated into thin 3D primitives.
+; 2D primitives are inflated into 3D primitives with equivalent intersections
+; with the XY plane.
 (define (canon-2d n)
   (case (node-type n)
     [(rect)
@@ -58,9 +59,11 @@
                    (node-color n))))]
     ))
 
-; A canonical union node has exactly two children.  Unions of more than two
-; children are rewritten into binary trees.
-(define (canon-union n)
+; Several kinds of nodes canonicalize by
+; - collapsing cases of zero or one child,
+; - rewriting into a binary tree of like nodes for two or more children.
+; These kinds are handled by the binary-canon method.
+(define ((binary-canon type) n)
   (let ([children (node-children n)])
     (case (length children)
       [(0) '()]
@@ -69,48 +72,16 @@
       [else (list
               (struct-copy node n
                            [children (cons (first children)
-                                           (canon-union
-                                             (node 'union
-                                                   '()
-                                                   (rest children)
-                                                   #f
-                                                   #f)))]))])))
-
-; A canonical smooth union has exactly two children.  Unions of more than two
-; children are rewritten into binary trees.
-(define (canon-smooth-union n)
-  (let ([children (node-children n)])
-    (case (length children)
-      [(0) '()]
-      [(1) children]
-      [(2) (list n)]
-      [else (list
-              (struct-copy node n
-                           [children (cons (first children)
-                                           (canon-smooth-union
-                                             (node 'smooth-union
+                                           (canonicalize
+                                             (node type
                                                    (node-atts n)
                                                    (rest children)
                                                    #f
                                                    #f)))]))])))
 
-; A canonical intersection node has exactly two children.  Intersections of
-; more than two children are rewritten into binary trees.
-(define (canon-intersection n)
-  (let ([children (node-children n)])
-    (case (length children)
-      [(0) '()]
-      [(1) children]  ; TODO: or empty?
-      [(2) (list n)]
-      [else (list
-              (struct-copy node n
-                           [children (cons (first children)
-                                           (canon-intersection
-                                             (node 'intersection
-                                                   '()
-                                                   (rest children)
-                                                   #f
-                                                   #f)))]))])))
+(define canon-union        (binary-canon 'union))
+(define canon-smooth-union (binary-canon 'smooth-union))
+(define canon-intersection (binary-canon 'intersection))
 
 ; Difference nodes get rewritten into intersections with inverse volumes.
 (define (canon-difference n)
@@ -129,23 +100,45 @@
             #f
             #f))))
 
+(define (wrap-canon-union children)
+  (canon-union (node 'union
+                     '()
+                     children
+                     #f
+                     #f)))
+
+(define ((unary-canon merge) n)
+  (let ([children (node-children n)])
+    (case (length children)
+      [(0) '()]
+      [(1) (merge n (first children))]
+      [else (list (struct-copy node n
+                               [children (wrap-canon-union children)]))])))
+
+(define (unary-canon+ type combine-atts no-op?)
+  (unary-canon
+    (lambda (n child)
+      (cond
+        [(eq? type (node-type child))
+         (canonicalize
+           (struct-copy node child [atts (combine-atts (node-atts n)
+                                                       (node-atts child))]))]
+        [(apply no-op? (node-atts n))
+         (list child)]
+        [else
+          (list n)]))))
+
 ; A canonical inverse has a single child.  Inverses of more than one child are
 ; assumed to be unions of the children and rewritten thus.
 ;
 ; Immediately nested inversions cancel.
-(define (canon-inverse n)
-  (let ([children (node-children n)])
-    (case (length children)
-      [(0) '()]
-      [(1) (case (node-type (first children))
-             [(inverse) (node-children (first children))]
-             [else (list n)])]
-      [else (list (struct-copy node n
-                               [children (canon-union (node 'union
-                                                            '()
-                                                            children
-                                                            #f
-                                                            #f))]))])))
+(define canon-inverse
+  (unary-canon
+    (lambda (n child)
+      (case (node-type child)
+        ; Collapse inverse-of-inverse by eliminating both n and child.
+        [(inverse) (node-children child)]
+        [else (list n)]))))
 
 ; A canonical translate has a single child.  Translations of more than one
 ; child are assumed to be unions of the children and rewritten thus.
@@ -153,26 +146,10 @@
 ; Immediately nested translations are flattened by adding their vectors.
 ;
 ; Useless translates (translations by zero) are eliminated.
-(define (canon-translate n)
-  (define (combine n1 n2)
-    (let ([v1 (first (node-atts n1))]
-          [v2 (first (node-atts n2))])
-      (struct-copy node n2 [atts (list (map + v1 v2))])))
-
-  (let ([children (node-children n)])
-    (case (length children)
-      [(0) '()]
-      [(1) (case (node-type (first children))
-             [(translate) (list (combine n (first children)))]
-             [else (if (equal? '(0 0 0) (first (node-atts n)))
-                     (list (first children))
-                     (list n))])]
-      [else (list (struct-copy node n
-                               [children (canon-union (node 'union
-                                                            '()
-                                                            children
-                                                            #f
-                                                            #f))]))])))
+(define canon-translate (unary-canon+
+                          'translate
+                          (lambda (a b) (list (map + (first a) (first b))))
+                          (lambda (v) (equal? '(0 0 0) v))))
 
 ; A canonical scale has a single child.  Scalings of more than one child are
 ; assumed to be unions of the children and rewritten thus.
@@ -180,26 +157,10 @@
 ; Immediately nested scalings are flattened by multiplying their factors.
 ;
 ; Useless scalings (scalings by 1 on all axes) are eliminated.
-(define (canon-scale n)
-  (define (combine n1 n2)
-    (let ([v1 (first (node-atts n1))]
-          [v2 (first (node-atts n2))])
-      (struct-copy node n2 [atts (list (map * v1 v2))])))
-
-  (let ([children (node-children n)])
-    (case (length children)
-      [(0) '()]
-      [(1) (case (node-type (first children))
-             [(scale) (list (combine n (first children)))]
-             [else (if (equal? '(1 1 1) (first (node-atts n)))
-                     (list (first children))
-                     (list n))])]
-      [else (list (struct-copy node n
-                               [children (canon-union (node 'union
-                                                            '()
-                                                            children
-                                                            #f
-                                                            #f))]))])))
+(define canon-scale (unary-canon+
+                      'scale
+                      (lambda (a b) (list (map * (first a) (first b))))
+                      (lambda (v) (equal? '(1 1 1) v))))
 
 ; A canonical isolevel shift has a single child.  Isolevel shifts of more than
 ; one child are assumed to be unions of the children and rewritten thus.
@@ -207,94 +168,32 @@
 ; Immediately nested isolevel shifts are flattened by adding their sizes.
 ;
 ; Useless shifts (shifts by zero) are eliminated.
-(define (canon-iso n)
-  (define (combine n1 n2)
-    (let ([d1 (first (node-atts n1))]
-          [d2 (first (node-atts n2))])
-      (struct-copy node n2 [atts (list (+ d1 d2))])))
-
-  (let ([children (node-children n)])
-    (case (length children)
-      [(0) '()]
-      [(1) (case (node-type (first children))
-             [(iso) (list (combine n (first children)))]
-             [else (if (zero? (first (node-atts n)))
-                     (list (first children))
-                     (list n))])]
-      [else (list (struct-copy node n
-                               [children (canon-union (node 'union
-                                                            '()
-                                                            children
-                                                            #f
-                                                            #f))]))])))
+(define canon-iso (unary-canon+
+                    'iso
+                    (lambda (a b) (map + a b))
+                    (lambda (v) (zero? v))))
 
 ; A canonical extrude has a single child.  Extrusions of more than one
 ; child are assumed to be unions of the children and rewritten thus.
-(define (canon-extrude n)
-  (let ([children (node-children n)])
-    (case (length children)
-      [(0) '()]
-      [(1) (list n)]
-      [else (list (struct-copy node n
-                               [children (canon-union (node 'union
-                                                            '()
-                                                            children
-                                                            #f
-                                                            #f))]))])))
+;
+; Extrusions don't get merged.
+(define canon-extrude (unary-canon (lambda (n _) (list n))))
 
 ; A canonical repeat has a single child.  Repetitions of more than one
 ; child are assumed to be unions of the children and rewritten thus.
-(define (canon-repeat n)
-  (let ([children (node-children n)])
-    (case (length children)
-      [(0) '()]
-      [(1) (list n)]
-      [else (list (struct-copy node n
-                               [children (canon-union (node 'union
-                                                            '()
-                                                            children
-                                                            #f
-                                                            #f))]))])))
+(define canon-repeat (unary-canon (lambda (n _) (list n))))
 
 ; A canonical mirror has a single child.  Mirrors of more than one
 ; child are assumed to be unions of the children and rewritten thus.
 ;
 ; The kind attribute must also match the known axes.
-(define (canon-mirror n)
-  (let ([children (node-children n)]
-        [axis (first (node-atts n))])
-    (unless (member axis '(x y z))
-      (error "bad axis used in mirror: " axis))
-
-    (case (length children)
-      [(0) '()]
-      [(1) (list n)]
-      [else (list (struct-copy node n
-                               [children (canon-union (node 'union
-                                                            '()
-                                                            children
-                                                            #f
-                                                            #f))]))])))
+(define canon-mirror (unary-canon (lambda (n _) (list n))))
 
 ; A canonical rotate has a single child.  Rotations of more than one child are
 ; assumed to be unions of the children and rewritten thus.
 ;
 ; Immediately nested rotations are combined through quaternion multiplication.
-(define (canon-rotate n)
-  (define (combine n1 n2)
-    (let ([q1 (first (node-atts n1))]
-          [q2 (first (node-atts n2))])
-      (struct-copy node n2 [atts (list (quat-mul q1 q2))])))
-
-  (let ([children (node-children n)])
-    (case (length children)
-      [(0) '()]
-      [(1) (case (node-type (first children))
-             [(rotate) (list (combine n (first children)))]
-             [else (list n)])]
-      [else (list (struct-copy node n
-                               [children (canon-union (node 'union
-                                                            '()
-                                                            children
-                                                            #f
-                                                            #f))]))])))
+(define canon-rotate (unary-canon+
+                       'rotate
+                       (lambda (a b) (list (quat-mul (first a) (first b))))
+                       (lambda (r) #f)))
