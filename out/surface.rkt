@@ -2,7 +2,7 @@
 
 ; Command line driver for 3D surface generation.
 ; 
-; Output is in STL (ASCII).
+; Output is in STL.
 ;
 ; For command-line usage, see the end of this file or run with '--help'.
 
@@ -10,7 +10,7 @@
 (require "./marching-tets.rkt")
 
 ; Knobs controlled from the command line, with default values:
-(define design-size 128)    ; size of cubic ROI to consider
+(define design-size 1000)    ; size of cubic ROI to consider
 (define design-quantum 1)   ; size of quantum for terminal contour
 
 (command-line
@@ -25,8 +25,8 @@
   [("-d" "--dimension")
    s
    ("Focus on a cube around the origin, <s> units on a"
-    "side.  This is a hint to the algorithm, not a clipping region; parts of"
-    "the design outside the cube may be included in the output.")
+    "side (default: 1000).  This is a hint to the algorithm, not a clipping"
+    "region; parts of the design outside the cube may be included.")
    (set! design-size (string->number s))]
   [("-q" "--quantum")
    q

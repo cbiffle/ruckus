@@ -135,14 +135,14 @@
 ; Processes a cube with most negative vertex 'corner' and size 'size', both in
 ; design units.  Calls 'out-fn' with each triangle discovered.
 (define (polygonize-cube f corner size out-fn)
-  (let* ([corners (vector corner
-                          (vec3-add corner (vec3 size 0 0))
-                          (vec3-add corner (vec3 size size 0))
-                          (vec3-add corner (vec3 0 size 0))
-                          (vec3-add corner (vec3 0 0 size))
-                          (vec3-add corner (vec3 size 0 size))
-                          (vec3-add corner (vec3 size size size))
-                          (vec3-add corner (vec3 0 size size)))]
+  (let* ([corners (vector corner                                      ; 0
+                          (vec3-add corner (vec3 size 0    0))        ; 1
+                          (vec3-add corner (vec3 size size 0))        ; 2
+                          (vec3-add corner (vec3 0    size 0))        ; 3
+                          (vec3-add corner (vec3 0    0    size))     ; 4
+                          (vec3-add corner (vec3 size 0    size))     ; 5
+                          (vec3-add corner (vec3 size size size))     ; 6
+                          (vec3-add corner (vec3 0    size size)))]   ; 7
          [levels (vector-map f corners)]
          [gc (grid-cell corners levels)])
     (polygonize-tet gc 0 2 3 7 out-fn)
@@ -169,40 +169,40 @@
         (out-fn t)))
     (case ind
       [(#x00 #x0F) void]
-      [(#x01 #x0E)
+      [(#x01 #x0E)  ; occupied: 0   clear: 1,2,3
        (out (vg v0 v1
                 v0 v2
                 v0 v3))]
-      [(#x02 #x0D)
+      [(#x02 #x0D)  ; occupied: 1   clear: 0,2,3
        (out (vg v1 v0
                 v1 v3
                 v1 v2))]
-      [(#x03 #x0C)
+      [(#x03 #x0C)  ; occupied 0,1  clear: 2,3
        (out (vg v1 v3
                 v0 v2
                 v0 v3))
        (out (vg v1 v3
                 v1 v2
                 v0 v2))]
-      [(#x04 #x0B)
+      [(#x04 #x0B)  ; occupied: 2   clear: 0,1,3
        (out (vg v2 v0
                 v2 v1
                 v2 v3))]
-      [(#x05 #x0A)
+      [(#x05 #x0A)  ; occupied: 0,2   clear: 1,3
        (out (vg v0 v1
                 v2 v3
                 v0 v3))
        (out (vg v0 v1
                 v1 v2
                 v2 v3))]
-      [(#x06 #x09)
+      [(#x06 #x09)  ; occupied: 1,2   clear: 0,3
        (out (vg v0 v1
                 v1 v3
                 v2 v3))
        (out (vg v2 v3
                 v0 v2
                 v0 v1))]
-      [(#x07 #x08)
+      [(#x07 #x08)  ; occupied: 0,1,2   clear: 3
        (out (vg v3 v1
                 v3 v2
                 v3 v0))])))
@@ -233,5 +233,5 @@
 ; the coordinates of two vertices, in design units.  'val1' and 'val2' are the
 ; corresponding field values.
 (define (verp p1 p2 val1 val2)
-  (let ([mu ((0 . - . val1) . / . (val2 . - . val1))])
+  (let ([mu (val1 . / . (val1 . - . val2))])
     (vec3-add p1 (vec3-mul (vec3-sub p2 p1) mu))))
