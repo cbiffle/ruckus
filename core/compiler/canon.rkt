@@ -28,6 +28,7 @@
       [(rotate) (canon-rotate n)]
       [(extrude) (canon-extrude n)]
       [(repeat) (canon-repeat n)]
+      [(radial-repeat) (canon-radial-repeat n)]
       [(mirror) (canon-mirror n)]
       [(sphere half box interpolation-surface capsule) (list n)]
       [(rect circle) (canon-2d n)]
@@ -182,6 +183,10 @@
 ; A canonical repeat has a single child.  Repetitions of more than one
 ; child are assumed to be unions of the children and rewritten thus.
 (define canon-repeat (unary-canon (lambda (n _) (list n))))
+
+; A canonical radial repeat has a single child.  Repetitions of more than one
+; child are assumed to be unions of the children and rewritten thus.
+(define canon-radial-repeat (unary-canon (lambda (n _) (list n))))
 
 ; A canonical mirror has a single child.  Mirrors of more than one
 ; child are assumed to be unions of the children and rewritten thus.

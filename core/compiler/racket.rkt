@@ -49,6 +49,9 @@
 
     [(list 'choose p a b) `(if ,(rkt-expr p) ,(rkt-expr a) ,(rkt-expr b))]
 
+    [(list 'radial-project q a s)
+     `(radial-project ,(rkt-expr q) ,(rkt-expr a) ,(rkt-expr s))]
+
     [(list 'box c p) `(df-box ,(rkt-expr c) ,(rkt-expr p))]
     [(list 'sphere r p) `(df-sphere ,(rkt-expr r) ,(rkt-expr p))]
     [(list 'capsule h r p) `(df-capsule ,(rkt-expr h)

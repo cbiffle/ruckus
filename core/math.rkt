@@ -37,7 +37,7 @@
 (define (real-mod n m)
   (when (not (positive? m))
     (error "modulus must be positive"))
-  (n . - . ((truncate (n . / . m)) . * . m)))
+  (n . - . ((floor (n . / . m)) . * . m)))
 
 ; ------------------------------------------------------------------------------
 ; 3-vectors

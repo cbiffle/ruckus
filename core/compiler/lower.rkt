@@ -47,6 +47,7 @@
     [(extrude) (generate-extrude node query)]
     [(mirror) (generate-mirror node query)]
     [(repeat) (generate-repeat node query)]
+    [(radial-repeat) (generate-radial-repeat node query)]
     [(iso)  (generate-iso node query)]
     [else     (error "unmatched node type in generate: " (node-type node))]))
 
@@ -260,6 +261,41 @@
                 [(z) `(vec3 ,z ,z ,spacing)])])
       (code `(assign3f ,pq- (sub 3 (r ,pq) ,v)))
       (code `(assign3f ,pq+ (add 3 (r ,pq) ,v))))
+
+    ; Generate child geometry three times, sampling three different points.
+    (let-values ([(d i) (generate (first children) pq)]
+                 [(d- i-) (generate (first children) pq-)]
+                 [(d+ i+) (generate (first children) pq+)]
+                 [(d-result i-result) (fresh-value-pair)])
+      (code `(assignf ,d-result (min (r ,d) (min (r ,d-) (r ,d+)))))
+      (code `(assignu ,i-result
+                      (choose ((r ,d-result) . < . (r ,d+))
+                              (choose ((r ,d-result) . < . (r ,d-))
+                                      (r ,i)
+                                      (r ,i-))
+                              (r ,i+))))
+      (values d-result i-result))))
+
+(define (generate-radial-repeat node query)
+  (unless (= 1 (length (node-children node)))
+    (error "non-canonical radial-repeat passed to generate"))
+
+  (let* ([children (node-children node)]
+         [freq (first (node-atts node))]
+         [angle ((2 . * . pi) . / . freq)]
+         ; pq will hold the value number for the periodic query point.
+         [pq (fresh-value)]
+         ; pq+ and pq- hold the same point, shifted up and down by one interval,
+         ; respectively.
+         [pq- (fresh-value)]
+         [pq+ (fresh-value)])
+
+    ; Populate the query points made periodic over the interval.
+    (code `(assign3f ,pq (radial-project (r ,query) (cf ,angle) (cf 0))))
+    (code `(assign3f ,pq- (radial-project (r ,query) (cf ,angle)
+                                          (cf ,(- angle)))))
+    (code `(assign3f ,pq+ (radial-project (r ,query) (cf ,angle)
+                                          (cf ,angle))))
 
     ; Generate child geometry three times, sampling three different points.
     (let-values ([(d i) (generate (first children) pq)]

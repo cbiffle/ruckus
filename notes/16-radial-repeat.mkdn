@@ -1,0 +1,25 @@
+
+This seems to work in GLSL:
+
+    float atan_(float y, float x) {
+      if (x == 0.) return 0.;
+      return atan(y, x);
+    }
+
+    vec3 prx(vec3 pos, float angleP, float shift) {
+      float a = atan_(pos.z, pos.x);
+      float d = length(pos.xz);
+      float a_ = mod(a + (angleP/2.), angleP) - (angleP/2.) + shift;
+      return vec3(d * cos(a_),
+                  pos.y,
+                  d * sin(a_));
+    }
+
+    float distanceField(vec3 pos) {
+      vec3 p = vec3(300, 0, 100);
+      float a = radians(360. / 7.);
+      float d = sphere(p, 50., prx(pos, a, 0.));
+      float dp = sphere(p, 50., prx(pos, a, a));
+      float dn = sphere(p, 50., prx(pos, a, -a));
+      return min(dn, min(d, dp));
+    }

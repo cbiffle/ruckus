@@ -72,6 +72,8 @@
     [(list 'vec3 a b) (fn "vec3" (glsl-expr a) (glsl-expr b))]
     [(list 'vec3 a b c) (fn "vec3" (glsl-expr a) (glsl-expr b) (glsl-expr c))]
     [(list 'proj _ v sym) (glsl-proj (glsl-expr v) sym)]
+    [(list 'radial-project q a s)
+     (fn "radialProject" (glsl-expr q) (glsl-expr a) (glsl-expr s))]
     [(list 'choose p a b)
      (glsl-choose (glsl-expr p) (glsl-expr a) (glsl-expr b))]
     [_ (error "bad expression passed to glsl-expr: " form)]))

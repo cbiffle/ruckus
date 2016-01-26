@@ -29,6 +29,7 @@
   mirror-z
 
   repeat-x
+  radial-repeat
 
   sphere
   rects
@@ -160,6 +161,14 @@
 
 (define-syntax-rule (repeat-x period b bs ...)
   (call-with-repeat 'x period (lambda () b bs ...)))
+
+(define (call-with-radial-repeat freq body)
+  (begin-child 'radial-repeat freq)
+  (body)
+  (end-child))
+
+(define-syntax-rule (radial-repeat freq b bs ...)
+  (call-with-radial-repeat freq (lambda () b bs ...)))
 
 (define-syntax-rule (color c b bs ...)
   (call-with-color c (lambda () b bs ...)))

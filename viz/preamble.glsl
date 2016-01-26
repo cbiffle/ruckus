@@ -76,6 +76,15 @@ float dfCapsule(float halfh, float r, vec3 q) {
   float t = clamp((q.z * halfh) / (halfh * halfh), 0.0, 1.0);
   return length(q - vec3(0, 0, halfh * t)) - r;
 }
+
+vec3 radialProject(vec3 pos, float period, float shift) {
+  float a = pos.x == 0. ? 0. : atan(pos.y, pos.x);
+  float d = length(pos.xy);
+  float a_ = mod(a + (period/2.), period) - (period/2.) + shift;
+  return vec3(d * cos(a_),
+              d * sin(a_),
+              pos.z);
+}
   
 
 ////////////////////////////////////////////////////////////////////////////////
