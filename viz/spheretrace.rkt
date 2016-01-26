@@ -5,6 +5,7 @@
 (require (planet "rgl.rkt" ("stephanh" "RacketGL.plt" 1 4)))
 (require ffi/vector)
 
+(require "../core/compiler/canon.rkt")
 (require "../core/compiler/enumerate.rkt")
 (require "../core/math.rkt")
 (require "../core/model.rkt")
@@ -110,7 +111,8 @@
       ; This handles silly cases like '(define design 3)`.
       (error "Design at" path "binds 'design', but not to a procedure."))
 
-    (let-values ([(count node) (enumerate-nodes 0 (call-with-edsl-root gen))])
+    (let*-values ([(cn) (first (canonicalize (call-with-edsl-root gen)))]
+                  [(count node) (enumerate-nodes 0 cn)])
       (printf "Design contains ~a nodes.~n" count)
       (update-colors-texture node)
       (append
