@@ -8,6 +8,8 @@ This is a whirlwind walkthrough of creating a simple Ruckus design.  We'll gloss
 over details and skip theory to give you a feel for how the tools feel in
 practice.  The later sections in this document will fill in the gaps.
 
+You should have completed the @secref{prerequisites}.
+
 
 @section{Writing a Design}
 

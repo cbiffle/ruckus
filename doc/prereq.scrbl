@@ -1,6 +1,6 @@
 #lang scribble/manual
 
-@title{Prerequisites}
+@title[#:tag "prerequisites"]{Prerequisites}
 
 To use Ruckus, you will need:
 
