@@ -8,4 +8,5 @@ This document introduces Ruckus, a procedural CAD system in the same family as
 
 @(table-of-contents)
 
+@include-section["prereq.scrbl"]
 @include-section["whirlwind.scrbl"]
