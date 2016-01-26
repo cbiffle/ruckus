@@ -1,7 +1,11 @@
-#lang scribble/base
+#lang scribble/manual
 
 @title{Ruckus: Procedural CAD For Weirdos}
 
-ohai
+This document introduces Ruckus, a procedural CAD system in the same family as
+@hyperlink["http://www.openscad.org/"]{OpenSCAD} and
+@hyperlink["http://www.implicitcad.org/"]{ImplicitCAD}.
 
-@include-section["getting-started.scrbl"]
+@(table-of-contents)
+
+@include-section["whirlwind.scrbl"]
