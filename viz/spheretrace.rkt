@@ -122,7 +122,7 @@
 ; Updates the colors texture with the appropriate colors for children of 'node'.
 (define (update-colors-texture node)
   (for ([i (in-range (* 512 512 3))])
-    (bytes-set! colors-buffer i #x80))
+    (bytes-set! colors-buffer i #xAA))
   (printf "Collecting node colors for texture...~n")
   (collect-node-colors
     node
