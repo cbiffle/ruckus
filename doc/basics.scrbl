@@ -159,6 +159,19 @@ Racket}.
   @bitmap{example-difference.png}
 }
 
+@defform[(smooth-union radius form ...)]{
+  Like @racket[union], but the creases where the child forms would intersect
+  are rounded to a minimum curvature @racket[radius].
+
+  @codeblock{
+    (smooth-union 10
+      (cube 330)
+      (sphere 200))
+  }
+
+  @bitmap{example-smooth-union.png}
+}
+
 @section{Transforms}
 
 @defform[(translate vector forms ...)]{
