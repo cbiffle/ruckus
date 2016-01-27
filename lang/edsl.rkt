@@ -176,8 +176,11 @@
 ; ------------------------------------------------------------------------
 ; Primitives and basic derived shapes.
 
-(define (sphere radius)
-  (add-child 'sphere radius))
+(define-syntax sphere
+  (syntax-rules ()
+    [(sphere r)            (add-child 'sphere r)]
+    [(sphere #:radius r)   (add-child 'sphere r)]
+    [(sphere #:diameter d) (add-child 'sphere (d . / . 2))]))
 
 (define (half-space p d)
   (add-child 'half p d))
@@ -194,8 +197,11 @@
 (define (rect sx sy)
   (add-child 'rect sx sy))
 
-(define (circle r)
-  (add-child 'circle r))
+(define-syntax circle
+  (syntax-rules ()
+    [(circle r)            (add-child 'circle r)]
+    [(circle #:radius r)   (add-child 'circle r)]
+    [(circle #:diameter d) (add-child 'circle d)]))
 
 (define (interpolation-surface . args)
   (define epsilon 1/100)
