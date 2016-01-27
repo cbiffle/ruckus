@@ -27,7 +27,7 @@ parentheses are exactly as shown.
 Save the file and display it using Ruckus's interactive visualizer,
 @exec{viz/spheretrace.rkt}:
 
-@exec{racket viz/spheretrace.rkt sphere.rkt}
+@exec{ruckus-view sphere.rkt}
 
 After a bit of churning, a window should pop up containing a little sphere,
 something like this:
@@ -83,7 +83,7 @@ To send the shape to the printer, we need to extract the design's surface in a
 format called STL, using Ruckus's surface exporter.  We'll call the output file
 @exec{sphere.stl}.
 
-@exec{racket out/surface.rkt sphere.rks sphere.stl}
+@exec{ruckus-export-surface sphere.rks sphere.stl}
 
 You can view the result in a tool such as MeshLab.  It should look something
 like this:
@@ -104,7 +104,7 @@ parameter @exec{-q}.
 Let's set it to 0.25, ensuring that any aliasing artifacts are no larger than a
 quarter of a millimeter.
 
-@exec{racket out/surface.rkt -q 0.25 sphere.rks sphere.stl}
+@exec{ruckus-export-surface -q 0.25 sphere.rks sphere.stl}
 
 The exporter is much slower (16x slower to be exact), but the output is much
 prettier:
