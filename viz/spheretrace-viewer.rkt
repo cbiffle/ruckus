@@ -13,7 +13,10 @@
   (class gl-viewer%
     (super-new)
     (inherit with-gl-context swap-gl-buffers low-priority-refresh)
-    (inherit-field draw setup)
+    (inherit-field design-node)
+
+    (init-field draw)
+    (init-field [(internal-setup setup) void])
 
     ; Orientation of the model, as controlled by the arcball interface.
     (define orientation (quat-identity-rotation))
@@ -38,6 +41,10 @@
     (define modes '(#f))
     ; A tail of the 'modes' list, where the current mode is the car.
     (define remaining-modes '(#f))
+
+    (define/override (setup)
+      (set! modes (internal-setup design-node))
+      (set! remaining-modes modes))
 
     ; Configure the GL viewport on size changes.
     (define/override (on-size width height)
@@ -148,7 +155,7 @@
       (struct-copy vec3 p [z (sqrt (1 . - . op-sqr))])
       (vec3-normalize p))))
 
-(define (view draw (setup void))
+(define (view design-path draw (setup void))
   (define frame 
     (new frame% 
          [label "Ruckus 3D"]
@@ -160,6 +167,7 @@
          [style '(gl no-autoclear)] 
          [parent frame] 
          [draw draw]
-         [setup setup]))
+         [setup setup]
+         [design-path design-path]))
 
   (send frame show #t))
