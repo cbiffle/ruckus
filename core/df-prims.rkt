@@ -11,7 +11,7 @@
 
 (define (radial-project q period shift)
   (let* ([a (if (zero? (vec3-x q))
-              0
+              (* (sgn (vec3-y q)) (/ pi 2))
               (atan (vec3-y q) (vec3-x q)))]
          [d (sqrt (+ (sqr (vec3-x q)) (sqr (vec3-y q))))]
          [ap (+ (real-mod (+ a (period . / . 2)) period)

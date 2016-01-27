@@ -29,6 +29,8 @@ uniform sampler2D nodeColors;
 
 out vec4 fragColor;
 
+const float pi = 3.14159265358;
+
 float smin(float k, float a, float b) {
     float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
     return mix(b, a, h) - k * h * (1.0 - h);
@@ -78,7 +80,7 @@ float dfCapsule(float halfh, float r, vec3 q) {
 }
 
 vec3 radialProject(vec3 pos, float period, float shift) {
-  float a = pos.x == 0. ? 0. : atan(pos.y, pos.x);
+  float a = pos.x == 0. ? (sign(pos.y) * (pi / 2.)) : atan(pos.y, pos.x);
   float d = length(pos.xy);
   float a_ = mod(a + (period/2.), period) - (period/2.) + shift;
   return vec3(d * cos(a_),
