@@ -208,7 +208,7 @@
     [(circle #:radius r)   (add-child 'circle r)]
     [(circle #:diameter d) (add-child 'circle d)]))
 
-(define (interpolation-surface . args)
+(define (interpolation-surface args)
   (define epsilon 1/100)
   (define (syntax->constraints s)
     (match s
@@ -217,12 +217,13 @@
 
       ; Two-lists of vectors become triples of constraints along the normal.
       [(list (vec3 _ _ _) (vec3 _ _ _))
-       (let ([surf (first s)]
-             [norm (vec3-normalize (second s))])
+       (let* ([surf (first s)]
+              [norm (vec3-normalize (second s))]
+              [offset (vec3-mul norm epsilon)])
          (list
            (cons surf 0)
-           (cons (vec3-add surf (vec3-mul norm epsilon)) epsilon)
-           (cons (vec3-sub surf (vec3-mul norm epsilon)) (- epsilon))))]
+           (cons (vec3-add surf offset) epsilon)
+           (cons (vec3-sub surf offset) (- epsilon))))]
 
       ; Allow punning of three-lists for vec3s.
       [(list (? number? x)

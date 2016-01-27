@@ -76,12 +76,12 @@ Racket}.
   origin in the "inside" part of space; negative distances exclude it.
 }
 
-@defform[(interpolation-surface constraints ...)]{
+@defform[(interpolation-surface constraints)]{
   Generates an interpolated implicit surface using Turk's algorithm for least
   curvature given the surface @racket[constraints].
 
-  @racket[constraints] can contain two kinds of values, basic points and points
-  with normal vectors.
+  @racket[constraints] must be a list.  Each item in the list can be one of two
+  kinds, basic points and points with normal vectors.
 
   Basic points (as lists of three reals) are points in space that are on the
   surface of the object.
@@ -89,6 +89,8 @@ Racket}.
   Points with normals are given as a list of two points.  The first is a basic
   point on the surface, and the second is taken as a normal vector pointing
   out of the surface at that point.
+
+  At least one point in the @racket[constraints] list must have a normal.
 
   This is still under development and is pretty hairy.
 }
