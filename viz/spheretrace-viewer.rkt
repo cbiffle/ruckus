@@ -14,9 +14,11 @@
 
 (provide spheretrace-viewer%)
 
-; Path anchor for finding 'preamble.glsl'.  This forces a correct path to be
-; ; generated at compile time, and includes the file in any generated packages.
+; Path anchors for finding the GLSL files we load at runtime.  This forces a
+; correct path to be generated at compile time, and includes the file in any
+; generated packages.
 (define-runtime-path preamble-glsl "./preamble.glsl")
+(define-runtime-path spheretrace-glsl "./spheretrace.glsl")
 
 ; ------------------------------------------------------------------------------
 ; OpenGL utilities.
@@ -115,11 +117,11 @@
         (set! colors-texture (u32vector-ref (glGenTextures 1) 0)))
 
       (if design-node
-        (call-with-input-file preamble-glsl generate-compile-and-link)
+        (generate-compile-and-link)
         ; Otherwise, at least clear the window.
         (glClear GL_COLOR_BUFFER_BIT)))
 
-    (define (generate-compile-and-link preamble-port)
+    (define (generate-compile-and-link)
       ; Clean up leftovers from last pass.
       (when current-program
         (printf "Marking program ~a for deletion.~n" current-program)
@@ -128,8 +130,7 @@
         (printf "Marking shader ~a for deletion.~n" current-shader)
         (glDeleteShader current-shader))
 
-      (let*-values ([(source lengths)
-                     (combine-sources preamble-port design-node)]
+      (let*-values ([(source lengths) (combine-sources design-node)]
                     [(program) (glCreateProgram)]
                     [(shader) (glCreateShader GL_FRAGMENT_SHADER)])
         (glShaderSource shader (vector-length source) source lengths)
@@ -148,18 +149,23 @@
           ; any error message from the graphics stack.
           (begin
             (for ([line source]) (display line))
-            (glDeleteShader shader)
-            (glDeleteProgram program)
-            (error 'generate-compile-and-link
-                   "error compiling: ~a"
-                   (get-shader-info-log shader))))))
+            (let ([log (get-shader-info-log shader)])
+              (glDeleteShader shader)
+              (glDeleteProgram program)
+              (error 'generate-compile-and-link "error compiling: ~a" log))))))
 
-    (define (combine-sources port node)
-      (let* ([preamble (for/vector ([line (in-lines port)])
-                        (string-append line "\n"))]
+    (define (read-file-as-line-vector f)
+      (for/vector ([line (in-lines f)])
+        (string-append line "\n")))
+
+    (define (combine-sources node)
+      (let* ([preamble (call-with-input-file preamble-glsl
+                                             read-file-as-line-vector)]
+             [spheretrace (call-with-input-file spheretrace-glsl
+                                                read-file-as-line-vector)]
              [gen (for/vector ([line (in-list (generate-glsl node))])
                     (string-append line "\n"))]
-             [lines (vector-append preamble gen)]
+             [lines (vector-append preamble spheretrace gen)]
              [lengths (for/list ([line (in-vector lines)])
                         (string-length line))]
              [lengths-vector (list->s32vector lengths)])
