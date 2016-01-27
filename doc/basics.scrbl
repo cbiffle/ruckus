@@ -29,44 +29,52 @@ Racket}.
 
 @defproc*[([(sphere [radius real?]) void?]
            [(sphere [#:radius radius real?]) void?]
-           [(sphere [#:diameter diameter real?]) void?])]
+           [(sphere [#:diameter diameter real?]) void?])]{
+  Generates a sphere, centered at the origin, with its size specified by either
+  @racket[radius] or @racket[diameter].
+}
 
-Generates a sphere, centered at the origin, with its size specified by either
-@racket[radius] or @racket[diameter].
+@defproc[(rects [size-x real?]
+                [size-y real?]
+                [size-z real?]) void?]{
+  Generates a rectangular solid, centered around the origin, with the extent
+  along each axis given by @racket[size-x], @racket[size-y], and
+  @racket[size-z].
+}
 
-@defproc*[([(rects [size-x real?]
-                   [size-y real?]
-                   [size-z real?]) void?])]
+@defproc*[([(cube [size real?]) void?])]{
+  Shorthand for a rectangular solid that is the same size along each axis, i.e.
+  a cube.
 
-Generates a rectangular solid, centered around the origin, with the extent
-along each axis given by @racket[size-x], @racket[size-y], and @racket[size-z].
+  This is exactly equivalent to the following definition:
 
-@defproc*[([(cube [size real?]) void?])]
+  @codeblock{
+    (define (cube size)
+      (rects size size size))
+  }
+}
 
-Shorthand for a rectangular solid that is the same size along each axis, i.e. a
-cube.
+@defproc*[([(capsule [height real?] [radius real?]) void?])]{
+  A capsule is like a cylinder, but its ends are rounded like spheres instead
+  of flat.
 
-@defproc*[([(capsule [height real?] [radius real?]) void?])]
+  The @racket[capsule] form generates a capsule, centered around the origin,
+  and extending along the Z axis.  @racket[height] gives the distance between
+  the center points of the two ending spheres, and @racket[radius] gives the
+  radius of the capsule and the ending spheres.
 
-A capsule is like a cylinder, but its ends are rounded like spheres instead of
-flat.
+  Note that the actual length of a capsule along Z is given by @racket[(+
+  height (* 2 radius))].
+}
 
-The @racket[capsule] form generates a capsule, centered around the origin, and
-extending along the Z axis.  @racket[height] gives the distance between the
-center points of the two ending spheres, and @racket[radius] gives the radius
-of the capsule and the ending spheres.
+@defproc*[([(half-space [normal coord?] [distance real?]) void?])]{
+  Generates a half-space, which divides all of space into two sections (inside
+  and outside) split by a plane.
 
-Note that the actual length of a capsule along Z is given by @racket[(+ height
-(* 2 radius))].
-
-@defproc*[([(half-space [normal coord?] [distance real?]) void?])]
-
-Generates a half-space, which divides all of space into two sections (inside
-and outside) split by a plane.
-
-The plane's normal is given by @racket[normal], and its distance from the
-origin along the normal is @racket[distance].  Positive distances include the
-origin in the "inside" part of space; negative distances exclude it.
+  The plane's normal is given by @racket[normal], and its distance from the
+  origin along the normal is @racket[distance].  Positive distances include the
+  origin in the "inside" part of space; negative distances exclude it.
+}
 
 @defform[(interpolation-surface constraints ...)]{
   Generates an interpolated implicit surface using Turk's algorithm for least
@@ -89,16 +97,16 @@ origin in the "inside" part of space; negative distances exclude it.
 
 @defproc*[([(circle [radius real?]) void?]
            [(circle [#:radius radius real?]) void?]
-           [(circle [#:diameter diameter real?]) void?])]
-
-Generates a circle whose size is specified by either @racket[radius] or
-@racket[diameter].
+           [(circle [#:diameter diameter real?]) void?])]{
+  Generates a circle whose size is specified by either @racket[radius] or
+  @racket[diameter].
+}
 
 @defproc*[([(rect [size-x real?]
-                  [size-y real?]) void?])]
-
-Generates a rectangle, centered around the origin, whose dimensions on the X
-and Y axis are given by @racket[size-x] and @racket[size-y], respectively.
+                  [size-y real?]) void?])]{
+  Generates a rectangle, centered around the origin, whose dimensions on the X
+  and Y axis are given by @racket[size-x] and @racket[size-y], respectively.
+}
 
 @section{Combinators}
 
@@ -247,11 +255,15 @@ and Y axis are given by @racket[size-x] and @racket[size-y], respectively.
   @racket[circle], but can be applied to anything.
 
   @codeblock{
-    (iso +20
-      (cube 330))
+    (extrude 200
+      (translate '[100 0 0]
+        (circle 100)))
+    (extrude 40
+      (translate '[-100 0 0]
+        (cube 200)))
   }
 
-  @bitmap{example-iso.png}
+  @bitmap{example-extrude.png}
 }
 
 @defform*[((mirror-x forms ...)
