@@ -12,7 +12,7 @@
 (require "../lang/evaluator.rkt")
 (require "../lang/loader.rkt")
 (require "./glsl.rkt")
-(require "./viewer.rkt")
+(require "./spheretrace-viewer.rkt")
 
 ; ------------------------------------------------------------------------------
 ; Globals used for program state.

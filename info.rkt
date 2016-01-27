@@ -7,7 +7,7 @@
 (define compile-omit-paths '("ex"))
 
 (define racket-launcher-libraries
-  '("viz/spheretrace.rkt"
+  '("viz/view3d.rkt"
     "viz/shaderdump.rkt"
     "out/outline.rkt"
     "out/surface.rkt"
