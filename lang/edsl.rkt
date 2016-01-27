@@ -18,6 +18,7 @@
   intersection
   difference
   translate
+  at
   rotate
   extrude
   scale
@@ -96,6 +97,10 @@
 
 ; Shift child geometry in space.  'v' should be a list of three numbers.
 (define-syntax-rule (translate v b bs ...)
+  (call-with-translation v (lambda () b bs ...)))
+
+; Shorthand for translate.
+(define-syntax-rule (at v b bs ...)
   (call-with-translation v (lambda () b bs ...)))
 
 (define (call-with-scale v body)
