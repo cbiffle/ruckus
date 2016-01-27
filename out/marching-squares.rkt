@@ -5,17 +5,10 @@
 
 (provide outline->svg)
 
-
 (require "../core/math.rkt")
 (require "../core/compiler/racket.rkt")
 (require "../lang/evaluator.rkt")
-
-
-; ------------------------------------------------------------------------------
-; Occupancy test, centralized so it stays consistent.
-
-(define (occupied? v)
-  (negative? v))
+(require "./marching-foo.rkt")
 
 
 ; ------------------------------------------------------------------------------

@@ -7,6 +7,7 @@
 (provide marching-cubes)
 
 (require "../core/math.rkt")
+(require "./marching-foo.rkt")
 
 ; Triangulates a single cubic domain within a signed distance bound function.
 ;
@@ -19,25 +20,8 @@
 ;
 ; 'out-fn' will be applied to each triangle found.
 (define (marching-cubes f corner size out-fn)
-  (let* ([corners (vector corner                                      ; 0
-                          (vec3-add corner (vec3 size 0    0))        ; 1
-                          (vec3-add corner (vec3 size size 0))        ; 2
-                          (vec3-add corner (vec3 0    size 0))        ; 3
-                          (vec3-add corner (vec3 0    0    size))     ; 4
-                          (vec3-add corner (vec3 size 0    size))     ; 5
-                          (vec3-add corner (vec3 size size size))     ; 6
-                          (vec3-add corner (vec3 0    size size)))]   ; 7
-         [levels (vector-map f corners)]
-         [gc (grid-cell corners levels)])
-    (polygonize gc out-fn)))
-
-; Describes a cube being triangulated.  'points' and 'values' are both vectors
-; of equal length, containing the vertices and field values, respectively.
-(struct grid-cell (points values) #:transparent)
-
-; Convenience accessors for getting the point and value by index.
-(define (g-point-ref gc idx) (vector-ref (grid-cell-points gc) idx))
-(define (g-value-ref gc idx) (vector-ref (grid-cell-values gc) idx))
+  (polygonize (make-grid-cell f corner size) 
+              out-fn))
 
 ; For each of 256 possible corner occupancy codes, this table records which of
 ; the twelve possible edges are involved in producing triangles.  This is used
@@ -390,6 +374,3 @@
     (if (occupied? v)
       (idx . bitwise-ior . (1 . arithmetic-shift . i))
       idx)))
-
-; Centralized occupancy test, so I don't get it backwards in some places.
-(define (occupied? v) (negative? v))
