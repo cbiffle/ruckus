@@ -65,3 +65,15 @@ to install Racket manually on such computers.
 @section{Ruckus Source Code}
 
 Ruckus is not yet being publicly distributed.  Contact me.
+
+Once you have a copy of the source code, change into the directory and run
+
+@exec{raco pkg install}
+
+This will make the Ruckus executables available in a directory that is probably
+not in your path, something like:
+
+@exec{~/.racket/6.3/bin/}
+
+Find the right directory (in the output from @exec{raco pkg install}) and add
+it to your path.
