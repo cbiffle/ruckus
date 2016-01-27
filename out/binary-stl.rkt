@@ -71,12 +71,14 @@
                     (write-byte 0)))))
   ; Return to the length and fill in our final tally.
   (file-position (current-output-port) 80)
-  (write-bytes (integer->integer-bytes triangle-count 4 #f )))
+  (write-bytes (integer->integer-bytes triangle-count 4 #f ))
+  (void))
 
 (define (stl-write-vector v)
   (write-bytes (real->floating-point-bytes (vec3-x v) 4 #f))
   (write-bytes (real->floating-point-bytes (vec3-y v) 4 #f))
-  (write-bytes (real->floating-point-bytes (vec3-z v) 4 #f)))
+  (write-bytes (real->floating-point-bytes (vec3-z v) 4 #f))
+  (void))
 
 
 ; ------------------------------------------------------------------------------
