@@ -4,6 +4,7 @@
 
 (provide
   radial-project
+  smooth-min
   df-sphere
   df-box
   df-capsule)
@@ -19,6 +20,15 @@
     (vec3 (* d (cos ap))
           (* d (sin ap))
           (vec3-z q))))
+
+(define (smooth-min k a b)
+  (let ([h (clamp (+ 0.5 (* 0.5 (/ (- b a) k))) 0. 1.)])
+    (- (mix b a h)
+       (* k h (- 1. h)))))
+
+(define (mix x y a)
+  (+ (* x (- 1 a))
+     (* y a)))
 
 (define (clamp x min-val max-val)
   (min (max x min-val) max-val))
