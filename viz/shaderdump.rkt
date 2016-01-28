@@ -4,13 +4,21 @@
 
 (require "../lang/evaluator.rkt")
 (require "../lang/loader.rkt")
+(require "../core/compiler/canon.rkt")
+(require "../core/compiler/enumerate.rkt")
 (require "./glsl.rkt")
 
+(define (apply-compiler c node)
+  (let-values ([(_ node) (enumerate-nodes 0
+                           (first
+                             (canonicalize node)))])
+    (c node)))
+                             
 (define compiler node->glsl-distance)
 
 (define (shaderdump path)
   (let ([gen (load-frep path)])
-    (for ([line (in-list (compiler (call-with-edsl-root gen)))])
+    (for ([line (in-list (apply-compiler compiler (call-with-edsl-root gen)))])
       (displayln line))))
 
 (command-line
