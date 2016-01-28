@@ -24,8 +24,8 @@ Racket}.
 
 @section{3D Primitives}
 
-3D objects are, by default, always placed at the origin.  Use
-@racket[translate] or other transforms to place them where they're needed.
+3D objects are, by default, always placed at the origin.  Use @racket[at] or
+other transforms to place them where they're needed.
 
 @defproc*[([(sphere [radius real?]) void?]
            [(sphere [#:radius radius real?]) void?]
@@ -176,7 +176,8 @@ Racket}.
 
 @section{Transforms}
 
-@defform[(translate vector forms ...)]{
+@defform*[((at vector forms ...)
+           (translate vector forms ...))]{
   Shifts child forms so that their origin is at the point @racket[vector] in the
   current coordinate space.
 
@@ -184,10 +185,12 @@ Racket}.
   list of three real numbers; in 2D, a list of two.  @racket[vector] may be
   written in place as a literal, or taken from a variable.
 
-  @racket[translate] implicitly wraps its children in a @racket[union].
+  @racket[at] implicitly wraps its children in a @racket[union].
+
+  @racket[translate] is a synonym for @racket[at].
 
   @codeblock{
-    (translate '[0 100 0]
+    (at '[0 100 0]
       (cube 330)
       (sphere 200))
   }
@@ -281,11 +284,11 @@ Racket}.
 
   @codeblock{
     (extrude 200
-      (translate '[100 0]
+      (at '[100 0]
         (circle 100)))
     (extrude 40
       (slice
-        (translate '[-100 0 0]
+        (at '[-100 0 0]
           (cube 200))))
   }
 
