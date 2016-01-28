@@ -40,11 +40,11 @@
                (extrude th (cs/base-top))))
     (mirror-y
       (translate `[0 ,(+ ex (- h-depth h-th)) 0]
-                 (rotate 'x 90
+                 (rotate 90 #:around 'x
                          (extrude th (cs/far-near)))))
     (mirror-x
       (translate `[,(+ ex (- h-width h-th)) 0 0]
-                 (rotate 'y 90
+                 (rotate 90 #:around 'y
                          (extrude th (cs/left-right)))
                  )
       )))
@@ -58,7 +58,7 @@
                  (notches width/tab #t)))
     (mirror-x
       (translate `[,h-width 0]
-                 (rotate 'z 90 (notches depth/tab #t))))
+                 (rotate 90 (notches depth/tab #t))))
     )
   )
 
@@ -70,7 +70,7 @@
                  (notches width/tab #f)))
     (mirror-x
       (translate `[,h-width 0]
-                 (rotate 'z 90 (notches height/tab #t))))
+                 (rotate 90 (notches height/tab #t))))
     )
   )
 
@@ -82,7 +82,7 @@
                  (notches height/tab #f)))
     (mirror-x
       (translate `[,h-height 0]
-                 (rotate 'z 90 (notches depth/tab #f))))
+                 (rotate 90 (notches depth/tab #f))))
     )
   )
 

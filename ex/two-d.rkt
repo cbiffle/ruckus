@@ -1,5 +1,5 @@
 (define (design)
-  (rotate '[0 1 0] 45
+  (rotate 45 #:around 'y
     (extrude 100
       (difference
         (circle 100)

@@ -147,7 +147,12 @@
 (define-syntax-rule (scale v b bs ...)
   (call-with-scale v (lambda () b bs ...)))
 
-(define (call-with-rotation axis angle body)
+(define (call-with-rotation q body)
+  (begin-child 'rotate q)
+  (body)
+  (end-child))
+
+(define (parse-axis-angle-rotation axis angle)
   (let ([axis (match axis
                 ['x (vec3 1 0 0)]
                 ['y (vec3 0 1 0)]
@@ -155,14 +160,30 @@
                 [(list x y z) (vec3 x y z)]
                 [(vec3 _ _ _) axis]
                 [else (error "Bad axis for rotate:" axis)])])
-    (begin-child 'rotate
-                 (quat-rotation-around (vec3-normalize axis)
-                                       (degrees->radians angle)))
-    (body)
-    (end-child)))
+    (quat-rotation-around (vec3-normalize axis)
+                          (degrees->radians angle))))
 
-(define-syntax-rule (rotate axis angle b bs ...)
-  (call-with-rotation axis angle (lambda () b bs ...)))
+(define-syntax rotate
+  (syntax-rules ()
+    [(rotate angle #:around axis b bs ...)
+     (begin
+       (unless (current-mode? '3d)
+         (error 'rotate
+                (string-append "The (rotate angle #:around axis ...) form is "
+                               "only available in 3D contexts.  In 2D, the "
+                               "axis is always Z and must be left implicit.")))
+       (call-with-rotation (parse-axis-angle-rotation axis angle)
+                           (lambda () b bs ...)))]
+
+    [(rotate angle b bs ...)
+     (begin
+       (unless (current-mode? '2d)
+         (error 'rotate
+                (string-append "The (rotate angle ...) form is only available "
+                               "in 2D contexts.  In 3D, please provide an "
+                               "axis.")))
+       (call-with-rotation (parse-axis-angle-rotation 'z angle)
+                           (lambda () b bs ...)))]))
 
 (define (call-with-extrusion depth body)
   (3d-only 'extrude)
