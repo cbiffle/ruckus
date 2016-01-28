@@ -119,11 +119,18 @@
   (call-with-scale v (lambda () b bs ...)))
 
 (define (call-with-rotation axis angle body)
-  (begin-child 'rotate
-               (quat-rotation-around (vec3-normalize (apply vec3 axis))
-                                     (degrees->radians angle)))
-  (body)
-  (end-child))
+  (let ([axis (match axis
+                ['x (vec3 1 0 0)]
+                ['y (vec3 0 1 0)]
+                ['z (vec3 0 0 1)]
+                [(list x y z) (vec3 x y z)]
+                [(vec3 _ _ _) axis]
+                [else (error "Bad axis for rotate:" axis)])])
+    (begin-child 'rotate
+                 (quat-rotation-around (vec3-normalize axis)
+                                       (degrees->radians angle)))
+    (body)
+    (end-child)))
 
 (define-syntax-rule (rotate axis angle b bs ...)
   (call-with-rotation axis angle (lambda () b bs ...)))

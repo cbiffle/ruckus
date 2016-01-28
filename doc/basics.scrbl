@@ -217,7 +217,12 @@ Racket}.
   Rotates child forms around their common origin.
 
   The rotation is by @racket[angle] degrees, counter-clockwise, around the
-  vector @racket[axis].
+  @racket[axis].
+
+  @racket[axis] can be one of the literal symbols @racket['x], @racket['y],
+  or @racket['z], designating the X, Y, or Z axes, respectively.
+
+  @racket[axis] can also be a literal vector, given as a list of three numbers.
 
   @racket[rotate] implicitly wraps its children in a @racket[union].
 
