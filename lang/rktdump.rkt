@@ -1,5 +1,7 @@
 #lang racket
 
+; A tool for dumping the Racket compiler output.
+
 (require "../core/compiler/racket.rkt")
 (require "./evaluator.rkt")
 (require "./loader.rkt")
@@ -12,7 +14,7 @@
     (pretty-write s)))
 
 (command-line
-  #:program "rktdump"
+  #:program "ruckus-dump-rkt"
 
   #:usage-help
   "Dumps the Racket expression describing a design mathematically."

@@ -17,6 +17,27 @@
 (require "./enumerate.rkt")
 (require "./lower.rkt")
 
+; Produces code for a distance field evaluator lambda for node 'n', as an
+; s-expression.
+(define (node->distance-s-expr n)
+  (let-values ([(r i s) (generate-statements n)])
+    `(lambda (r0)
+       ,(rkt-fold-statements (prune-statements s r) r))))
+
+; Produces code for a discriminator lambda for node 'n', as an s-expression.
+(define (node->disc-s-expr n)
+  (let-values ([(r i s) (generate-statements n)])
+    `(lambda (r0)
+       ,(rkt-fold-statements (prune-statements s i) i))))
+
+; Produces a working distance field evaluator for node 'n'.
+(define (node->distance-function n)
+  (eval-in-gen-env (node->distance-s-expr n)))
+
+; Produces a working discriminator for node 'n'.
+(define (node->discriminator n)
+  (eval-in-gen-env (node->disc-s-expr n)))
+
 ; Generates a Racket expression from an expression-level intermediate.
 (define (rkt-expr form)
   (match form
@@ -67,22 +88,6 @@
     [(y) `(vec3-y ,v)]
     [(z) `(vec3-z ,v)]
     [else (error "Unsupported projection for Racket mode:" sym)]))
-
-(define (node->distance-s-expr n)
-  (let-values ([(r i s) (generate-statements n)])
-    `(lambda (r0)
-       ,(rkt-fold-statements (prune-statements s r) r))))
-
-(define (node->disc-s-expr n)
-  (let-values ([(r i s) (generate-statements n)])
-    `(lambda (r0)
-       ,(rkt-fold-statements (prune-statements s i) i))))
-
-(define (node->distance-function n)
-  (eval-in-gen-env (node->distance-s-expr n)))
-
-(define (node->discriminator n)
-  (eval-in-gen-env (node->disc-s-expr n)))
 
 (define-runtime-module-path-index mpi-math "../math.rkt")
 (define-runtime-module-path-index mpi-df-prims "../df-prims.rkt")

@@ -17,7 +17,7 @@
 (define polygonizer marching-cubes)
 
 (command-line
-  #:program "surface"
+  #:program "ruckus-export-surface"
 
   #:usage-help
   "Generates an STL triangulation of the surface of a design."

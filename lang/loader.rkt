@@ -1,7 +1,8 @@
 #lang racket
 
-(provide
-  load-frep)
+; Basic design file loading support.
+
+(provide load-frep)
 
 (require racket/runtime-path)
 (require syntax/modread)

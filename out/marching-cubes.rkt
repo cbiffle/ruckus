@@ -1,8 +1,12 @@
 #lang racket
 
 ; Marching Cubes method for triangulating a surface within a cube of space.
+;
 ; The implementation follows Paul Bourke's C implementation, which I believe to
 ; be in the public domain: http://paulbourke.net/geometry/polygonise/
+;
+; Nevertheless, only the contents of the tables below directly reflect his
+; implementation.
 
 (provide marching-cubes)
 

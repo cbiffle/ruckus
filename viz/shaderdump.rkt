@@ -1,5 +1,7 @@
 #lang racket
 
+; Tool for dumping GLSL generated shaders.
+
 (require "../lang/evaluator.rkt")
 (require "../lang/loader.rkt")
 (require "./glsl.rkt")
@@ -12,7 +14,7 @@
       (displayln line))))
 
 (command-line
-  #:program "shaderdump"
+  #:program "ruckus-dump-glsl"
 
   #:usage-help
   "Prints the GLSL code equivalent of a design.  Mostly useful for debugging."

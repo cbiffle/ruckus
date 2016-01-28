@@ -14,7 +14,7 @@
 ; Command line interface.
 
 (command-line
-  #:program "two"
+  #:program "ruckus-2d"
 
   #:usage-help
   "Displays a design interactively in 2D mode."

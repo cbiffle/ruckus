@@ -1,6 +1,6 @@
 #lang racket
 
-(require "./math.rkt")
+; Stuff needed to evaluate distance functions in generated Racket code.
 
 (provide
   radial-project
@@ -8,6 +8,8 @@
   df-sphere
   df-box
   df-capsule)
+
+(require "./math.rkt")
 
 (define (radial-project q period shift)
   (let* ([a (if (zero? (vec3-x q))

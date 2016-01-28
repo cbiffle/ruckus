@@ -14,7 +14,7 @@
 ; Command line interface.
 
 (command-line
-  #:program "spheretrace"
+  #:program "ruckus-3d"
 
   #:usage-help
   "Displays a design interactively using ray-tracing."

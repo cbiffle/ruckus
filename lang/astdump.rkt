@@ -1,5 +1,7 @@
 #lang racket
 
+; Tool for printing AST.
+
 (require "../core/compiler/canon.rkt")
 (require "../core/compiler/enumerate.rkt")
 (require "./evaluator.rkt")
@@ -15,7 +17,7 @@
 (define process (lambda (x) x))
 
 (command-line
-  #:program "astdump"
+  #:program "ruckus-dump-ast"
 
   #:usage-help
   "Dumps the EDSL-level abstract syntax tree for a design."

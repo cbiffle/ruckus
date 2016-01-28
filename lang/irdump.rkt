@@ -1,5 +1,7 @@
 #lang racket
 
+; A tool for dumping internal compiler IR.
+
 (require "../core/compiler/lower.rkt")
 (require "./evaluator.rkt")
 (require "./loader.rkt")
@@ -16,7 +18,7 @@
     (unless pruning (printf "ID in:       ~a~n" i))))
 
 (command-line
-  #:program "irdump"
+  #:program "ruckus-dump-ir"
 
   #:usage-help
   "Dumps the internal compiler IR for a design."

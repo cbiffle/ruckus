@@ -15,7 +15,7 @@
 (define design-unit 'mm)    ; real-world mapping of design units
 
 (command-line
-  #:program "outline"
+  #:program "ruckus-export-outline"
 
   #:usage-help
   "Generates an SVG outline of the intersection of a design with the XY plane."
