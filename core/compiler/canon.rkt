@@ -149,8 +149,8 @@
 ; Useless translates (translations by zero) are eliminated.
 (define canon-translate (unary-canon+
                           'translate
-                          (lambda (a b) (list (map + (first a) (first b))))
-                          (lambda (v) (equal? '(0 0 0) v))))
+                          (lambda (a b) (list (vec3-add (first a) (first b))))
+                          (lambda (v) (equal? (vec3 0 0 0) v))))
 
 ; A canonical scale has a single child.  Scalings of more than one child are
 ; assumed to be unions of the children and rewritten thus.

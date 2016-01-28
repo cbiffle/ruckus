@@ -91,9 +91,12 @@
   (call-as-difference (lambda () b bs ...)))
 
 (define (call-with-translation v body)
-  (begin-child 'translate v)  ; TODO use vec3
-  (body)
-  (end-child))
+  (let ([v (match v
+             [(list x y z) (vec3 x y z)]
+             [(vec3 _ _ _) v])])
+    (begin-child 'translate v)
+    (body)
+    (end-child)))
 
 ; Shift child geometry in space.  'v' should be a list of three numbers.
 (define-syntax-rule (translate v b bs ...)
