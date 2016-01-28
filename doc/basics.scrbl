@@ -180,8 +180,9 @@ Racket}.
   Shifts child forms so that their origin is at the point @racket[vector] in the
   current coordinate space.
 
-  @racket[vector] should be a list of three real numbers, either written in
-  place as a quoted literal, or taken from a variable.
+  @racket[vector] should be a valid vector in the current context: in 3D, a
+  list of three real numbers; in 2D, a list of two.  @racket[vector] may be
+  written in place as a literal, or taken from a variable.
 
   @racket[translate] implicitly wraps its children in a @racket[union].
 
@@ -200,7 +201,8 @@ Racket}.
   When called with @racket[ratio], the single ratio is applied equally to all
   axes.
 
-  When called with @racket[vector], separate ratios are applied to each axis.
+  When called with @racket[vector], separate ratios are applied to each axis:
+  in 3D contexts, three ratios are required, and in 2D, two are required.
 
   @racket[scale] implicitly wraps its children in a @racket[union].
 
@@ -212,22 +214,27 @@ Racket}.
   @bitmap{example-scale.png}
 }
 
-@defform[(rotate axis angle forms ...)
-         #:contracts ([axis (listof real?)] [angle real?])]{
+@defform*[((rotate angle forms ...)
+           (rotate angle #:around axis forms ...))
+         #:contracts ([angle real?] [axis (listof real?)])]{
   Rotates child forms around their common origin.
 
-  The rotation is by @racket[angle] degrees, counter-clockwise, around the
-  @racket[axis].
+  In 2D contexts, the first version must be used, and the rotation is always
+  counter-clockwise by @racket[angle] degrees around the Z axis.
+
+  In 3D contexts, the second version must be used, and the @racket[axis]
+  must be provided.
 
   @racket[axis] can be one of the literal symbols @racket['x], @racket['y],
   or @racket['z], designating the X, Y, or Z axes, respectively.
 
   @racket[axis] can also be a literal vector, given as a list of three numbers.
+  In this case the vector will be normalized internally.
 
   @racket[rotate] implicitly wraps its children in a @racket[union].
 
   @codeblock{
-    (rotate '[0 0 1] 45
+    (rotate 45 #:around 'z
       (sphere 200)
       (cube 330))
   }
@@ -266,24 +273,29 @@ Racket}.
 
 @defform[(extrude height forms ...)
          #:contracts ([height real?])]{
+  Extrudes 2D child forms along the Z axis into a 3D solid of height
+  @racket[height] centered around the XY plane.
 
-  Intersects child forms with the XY plane, producing a 2D outline at Z=0,
-  and then extrudes that outline into a 3D solid of height @racket[height]
-  centered around the XY plane.
-
-  @racket[extrude] is most obviously applied to 2D forms like @racket[rect] and
-  @racket[circle], but can be applied to anything.
+  To apply @racket[extrude] to 3D child forms, you must combine it with
+  @racket[slice], as shown in the example below.
 
   @codeblock{
     (extrude 200
-      (translate '[100 0 0]
+      (translate '[100 0]
         (circle 100)))
     (extrude 40
-      (translate '[-100 0 0]
-        (cube 200)))
+      (slice
+        (translate '[-100 0 0]
+          (cube 200))))
   }
 
   @bitmap{example-extrude.png}
+}
+
+@defform[(slice forms ...)]{
+  Converts 3D forms into 2D by intersecting them with the XY plane.  This is
+  useful to convert an arbitrary cross-section of a 3D object into a 2D outline,
+  which can then be manipulated or extruded.
 }
 
 @defform*[((mirror-x forms ...)
@@ -299,7 +311,8 @@ Racket}.
   side.  The result is symmetric around the XZ plane.
 
   @racket[mirror-z] mirrors the positive-Z side of space to the negative-Z
-  side.  The result is symmetric around the XY plane.
+  side.  The result is symmetric around the XY plane.  This version is illegal
+  in 2D contexts.
 }
 
 @defform*[((repeat-x period forms ...))]{
