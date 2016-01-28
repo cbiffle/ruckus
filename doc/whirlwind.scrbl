@@ -27,7 +27,7 @@ parentheses are exactly as shown.
 Save the file and display it using Ruckus's interactive visualizer,
 @exec{viz/spheretrace.rkt}:
 
-@exec{ruckus-view sphere.rkt}
+@exec{ruckus-3d sphere.rkt}
 
 After a bit of churning, a window should pop up containing a little sphere,
 something like this:

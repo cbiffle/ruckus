@@ -15,7 +15,7 @@
     "lang/rktdump.rkt"
     "lang/astdump.rkt"))
 (define racket-launcher-names
-  '("ruckus-view"
+  '("ruckus-3d"
     "ruckus-dump-glsl"
     "ruckus-export-outline"
     "ruckus-export-surface"
