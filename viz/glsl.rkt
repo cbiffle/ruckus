@@ -16,15 +16,18 @@
   (string-append "(" str ")"))
 
 (define (fn name . args)
-  (string-append name "(" (string-join args ", ") ")"))
+  (string-append
+    name "("
+    (string-join (map glsl-expr args) ", ")
+    ")"))
 
 (define (glsl-vec3 x y z)
-  (apply fn "vec3" (map number->string (map real->double-flonum (list x y z)))))
+  (apply fn "vec3" (map (lambda (n) `(cf ,n)) (list x y z))))
 
 (define/match (glsl-quat q)
   [((quat s (vec3 x y z)))
    (apply fn "vec4"
-          (map number->string (map real->double-flonum (list x y z s))))])
+          (map (lambda (n) `(cf ,n)) (list x y z s)))])
 
 (define (glsl-proj v sym)
   (string-append (wrap v) "." (symbol->string sym)))
@@ -51,29 +54,25 @@
     [(list 'sub _ a b) (bin "-" (glsl-expr a) (glsl-expr b))]
     [(list 'add _ a b) (bin "+" (glsl-expr a) (glsl-expr b))]
     [(list 'mul _ a b) (bin "*" (glsl-expr a) (glsl-expr b))]
-    [(list 'length _ v) (fn "length" (glsl-expr v))]
-    [(list 'dot _ a b) (fn "dot" (glsl-expr a) (glsl-expr b))]
+    [(list 'length _ v) (fn "length" v)]
+    [(list 'dot _ a b) (fn "dot" a b)]
 
     [(list '< a b) (bin "<" (glsl-expr a) (glsl-expr b))]
     [(list '> a b) (bin ">" (glsl-expr a) (glsl-expr b))]
 
-    [(list 'abs a) (fn "abs" (glsl-expr a))]
-    [(list 'max a b) (fn "max" (glsl-expr a) (glsl-expr b))]
-    [(list 'min a b) (fn "min" (glsl-expr a) (glsl-expr b))]
-    [(list 'smin s a b) (fn "smin" (glsl-expr s) (glsl-expr a) (glsl-expr b))]
-    [(list 'mod a b) (fn "mod" (glsl-expr a) (glsl-expr b))]
-    [(list 'qrot q v) (fn "qrot" (glsl-expr q) (glsl-expr v))]
-    [(list 'box c p) (fn "dfBox" (glsl-expr c) (glsl-expr p))]
-    [(list 'sphere r p) (fn "dfSphere" (glsl-expr r) (glsl-expr p))]
-    [(list 'capsule h r p) (fn "dfCapsule"
-                               (glsl-expr h)
-                               (glsl-expr r)
-                               (glsl-expr p))]
-    [(list 'vec3 a b) (fn "vec3" (glsl-expr a) (glsl-expr b))]
-    [(list 'vec3 a b c) (fn "vec3" (glsl-expr a) (glsl-expr b) (glsl-expr c))]
+    [(list 'abs a) (fn "abs" a)]
+    [(list 'max a b) (fn "max" a b)]
+    [(list 'min a b) (fn "min" a b)]
+    [(list 'smin s a b) (fn "smin" s a b)]
+    [(list 'mod a b) (fn "mod" a b)]
+    [(list 'qrot q v) (fn "qrot" q v)]
+    [(list 'box c p) (fn "dfBox" c p)]
+    [(list 'sphere r p) (fn "dfSphere" r p)]
+    [(list 'capsule h r p) (fn "dfCapsule" h r p)]
+    [(list 'vec3 a b) (fn "vec3" a b)]
+    [(list 'vec3 a b c) (fn "vec3" a b c)]
     [(list 'proj _ v sym) (glsl-proj (glsl-expr v) sym)]
-    [(list 'radial-project q a s)
-     (fn "radialProject" (glsl-expr q) (glsl-expr a) (glsl-expr s))]
+    [(list 'radial-project q a s) (fn "radialProject" q a s)]
     [(list 'choose p a b)
      (glsl-choose (glsl-expr p) (glsl-expr a) (glsl-expr b))]
     [_ (error "bad expression passed to glsl-expr: " form)]))
