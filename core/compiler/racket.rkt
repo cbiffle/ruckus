@@ -48,39 +48,39 @@
     [(list 'c4f (quat s (vec3 x y z))) `(quat ,s (vec3 ,x ,y ,z))]
     [(list (or 'cf 'cu) x) x]
 
-    [(list 'sub 1 a b) `(- ,(rkt-expr a) ,(rkt-expr b))]
-    [(list 'add 1 a b) `(+ ,(rkt-expr a) ,(rkt-expr b))]
-    [(list 'mul 1 a b) `(* ,(rkt-expr a) ,(rkt-expr b))]
+    [(list 'sub 1 a b) (rkt-fn '- a b)]
+    [(list 'add 1 a b) (rkt-fn '+ a b)]
+    [(list 'mul 1 a b) (rkt-fn '* a b)]
 
-    [(list 'sub 3 a b) `(vec3-sub ,(rkt-expr a) ,(rkt-expr b))]
-    [(list 'add 3 a b) `(vec3-add ,(rkt-expr a) ,(rkt-expr b))]
-    [(list 'mul 3 a b) `(vec3-mul ,(rkt-expr a) ,(rkt-expr b))]
-    [(list 'length 3 v) `(vec3-length ,(rkt-expr v))]
-    [(list 'dot 3 a b) `(vec3-dot ,(rkt-expr a) ,(rkt-expr b))]
+    [(list 'sub 3 a b) (rkt-fn 'vec3-sub a b)]
+    [(list 'add 3 a b) (rkt-fn 'vec3-add a b)]
+    [(list 'mul 3 a b) (rkt-fn 'vec3-mul a b)]
+    [(list 'length 3 v) (rkt-fn 'vec3-length v)]
+    [(list 'dot 3 a b) (rkt-fn 'vec3-dot a b)]
 
-    [(list 'abs a) `(abs ,(rkt-expr a))]
+    [(list 'abs a) (rkt-fn 'abs a)]
 
-    [(list '< a b) `(< ,(rkt-expr a) ,(rkt-expr b))]
-    [(list '> a b) `(> ,(rkt-expr a) ,(rkt-expr b))]
-    [(list 'max a b) `(max ,(rkt-expr a) ,(rkt-expr b))]
-    [(list 'min a b) `(min ,(rkt-expr a) ,(rkt-expr b))]
-    [(list 'smin s a b) `(smooth-min ,(rkt-expr s) ,(rkt-expr a) ,(rkt-expr b))]
-    [(list 'mod a b) `(real-mod ,(rkt-expr a) ,(rkt-expr b))]
-    [(list 'qrot q v) `(quat-rotate ,(rkt-expr q) ,(rkt-expr v))]
+    [(list '< a b) (rkt-fn '< a b)]
+    [(list '> a b) (rkt-fn '> a b)]
+    [(list 'max a b) (rkt-fn 'max a b)]
+    [(list 'min a b) (rkt-fn 'min a b)]
+    [(list 'smin s a b) (rkt-fn 'smooth-min s a b)]
+    [(list 'mod a b) (rkt-fn 'real-mod a b)]
+    [(list 'qrot q v) (rkt-fn 'quat-rotate q v)]
 
-    [(list 'choose p a b) `(if ,(rkt-expr p) ,(rkt-expr a) ,(rkt-expr b))]
+    [(list 'choose p a b) (rkt-fn 'if p a b)]
 
-    [(list 'radial-project q a s)
-     `(radial-project ,(rkt-expr q) ,(rkt-expr a) ,(rkt-expr s))]
+    [(list 'radial-project q a s) (rkt-fn 'radial-project q a s)]
 
-    [(list 'box c p) `(df-box ,(rkt-expr c) ,(rkt-expr p))]
-    [(list 'sphere r p) `(df-sphere ,(rkt-expr r) ,(rkt-expr p))]
-    [(list 'capsule h r p) `(df-capsule ,(rkt-expr h)
-                                        ,(rkt-expr r)
-                                        ,(rkt-expr p))]
-    [(list 'vec3 a b c) `(vec3 ,(rkt-expr a) ,(rkt-expr b) ,(rkt-expr c))]
+    [(list 'box c p) (rkt-fn 'df-box c p)]
+    [(list 'sphere r p) (rkt-fn 'df-sphere r p)]
+    [(list 'capsule h r p) (rkt-fn 'df-capsule h r p)]
+    [(list 'vec3 a b c) (rkt-fn 'vec3 a b c)]
     [(list 'proj 3 v sym) (rkt-proj (rkt-expr v) sym)] ; TODO
     [_ (error "bad expression passed to rkt-expr: " form)]))
+
+(define (rkt-fn sym . args)
+  `(,sym ,@(map rkt-expr args)))
 
 (define (rkt-proj v sym)
   (case sym
