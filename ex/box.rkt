@@ -29,8 +29,8 @@
 
 (define (cs/cut-layout)
   (cs/base-top)
-  (translate `[0 ,(+ h-height h-depth) 0] (cs/far-near))
-  (translate `[,(+ h-width h-height) 0 0] (cs/left-right))
+  (translate `[0 ,(+ h-height h-depth)] (cs/far-near))
+  (translate `[,(+ h-width h-height) 0] (cs/left-right))
   )
 
 (define (assembly ex)
@@ -54,10 +54,10 @@
   (difference
     (rect width depth)
     (mirror-y
-      (translate `[0 ,h-depth 0]
+      (translate `[0 ,h-depth]
                  (notches width/tab #t)))
     (mirror-x
-      (translate `[,h-width 0 0]
+      (translate `[,h-width 0]
                  (rotate 'z 90 (notches depth/tab #t))))
     )
   )
@@ -66,10 +66,10 @@
   (difference
     (rect width height)
     (mirror-y
-      (translate `[0 ,h-height 0]
+      (translate `[0 ,h-height]
                  (notches width/tab #f)))
     (mirror-x
-      (translate `[,h-width 0 0]
+      (translate `[,h-width 0]
                  (rotate 'z 90 (notches height/tab #t))))
     )
   )
@@ -78,10 +78,10 @@
   (difference
     (rect height depth)
     (mirror-y
-      (translate `[0 ,h-depth 0]
+      (translate `[0 ,h-depth]
                  (notches height/tab #f)))
     (mirror-x
-      (translate `[,h-height 0 0]
+      (translate `[,h-height 0]
                  (rotate 'z 90 (notches depth/tab #f))))
     )
   )
@@ -99,6 +99,6 @@
 (define (notches count polarity)
   (let* ([shift1 (if (even? count) (/ tab 2) 0)]
          [shift (if polarity shift1 (+ tab shift1))])
-    (translate `[,shift 0 0]
+    (translate `[,shift 0]
                (repeat-x (2 . * . tab)
                          (rect tab (* 2 th))))))

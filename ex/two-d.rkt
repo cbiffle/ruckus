@@ -3,7 +3,8 @@
     (extrude 100
       (difference
         (circle 100)
-        (radial-repeat 3
-          (at '[55 0 0] (sphere 30)))
+        (slice
+          (radial-repeat 3
+            (at '[55 0 0] (sphere 30))))
         (rect 20 20))))
 )

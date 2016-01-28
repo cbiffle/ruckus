@@ -17,13 +17,17 @@
   smooth-union
   intersection
   difference
+
+  color
+  iso
+
   translate
   at
   rotate
-  extrude
   scale
-  iso
-  color
+
+  extrude
+  slice
 
   mirror-x
   mirror-y
@@ -90,28 +94,50 @@
 (define-syntax-rule (difference b bs ...)
   (call-as-difference (lambda () b bs ...)))
 
-(define (call-with-translation v body)
-  (let ([v (match v
-             [(list x y z) (vec3 x y z)]
-             [(vec3 _ _ _) v])])
-    (begin-child 'translate v)
-    (body)
-    (end-child)))
+(define (call-with-translation called-as v body)
+  (define (parse-vector v)
+    (match v
+      [(list x y z)
+       (three-coordinates called-as v)
+       (vec3 x y z)]
+      [(vec3 _ _ _)
+       (three-coordinates called-as v)
+       v]
+      [(list x y)
+       (two-coordinates called-as v)
+       (vec3 x y 0)]))   ; TODO: need vec2 type!
 
-; Shift child geometry in space.  'v' should be a list of three numbers.
+  (begin-child 'translate (parse-vector v))
+  (body)
+  (end-child))
+
+; Shift child geometry in space.
 (define-syntax-rule (translate v b bs ...)
-  (call-with-translation v (lambda () b bs ...)))
+  (call-with-translation 'translate v (lambda () b bs ...)))
 
 ; Shorthand for translate.
 (define-syntax-rule (at v b bs ...)
-  (call-with-translation v (lambda () b bs ...)))
+  (call-with-translation 'at v (lambda () b bs ...)))
 
 (define (call-with-scale v body)
-  (begin-child
-    'scale
-    (if (number? v)
-      (list v v v)
-      v))
+  (define (parse-scale v)
+    (match v
+      ; Allow a real to be punned for uniform scaling on all axes.
+      [(? real? v)
+       ; Yes, we produce uniform 3D scaling even in 2D mode, to keep
+       ; differently scaled Z extent from interfering with the XY field.
+       (vec3 v v v)]
+      [(list x y z)
+       (three-coordinates 'scale v)
+       (vec3 x y z)]
+      [(vec3 _ _ _)
+       (three-coordinates 'scale v)
+       v]
+      [(list x y)
+       (two-coordinates 'scale v)
+       (vec3 x y 0)]))  ; TODO: vec2
+
+  (begin-child 'scale (parse-scale v))
   (body)
   (end-child))
 
@@ -139,12 +165,22 @@
   (call-with-rotation axis angle (lambda () b bs ...)))
 
 (define (call-with-extrusion depth body)
+  (3d-only 'extrude)
   (begin-child 'extrude depth)
-  (body)
+  (call-with-mode '2d body)
   (end-child))
 
 (define-syntax-rule (extrude depth b bs ...)
   (call-with-extrusion depth (lambda () b bs ...)))
+
+(define (call-with-slicing body)
+  (2d-only 'slice)
+  (begin-child 'slice)
+  (call-with-mode '3d body)
+  (end-child))
+
+(define-syntax-rule (slice b bs ...)
+  (call-with-slicing (lambda () b bs ...)))
 
 (define (call-with-iso depth body)
   (begin-child 'iso depth)
@@ -166,8 +202,10 @@
   (call-with-mirror 'y (lambda () b bs ...)))
 
 (define-syntax-rule (mirror-z b bs ...)
-  (call-with-mirror 'z (lambda () b bs ...)))
-
+  (begin
+    (when (current-mode? '2d)
+      (error "mirror-z cannot be used in a 2D context."))
+    (call-with-mirror 'z (lambda () b bs ...))))
 
 (define (call-with-repeat kind period body)
   (begin-child 'repeat kind period)
@@ -193,32 +231,50 @@
 
 (define-syntax sphere
   (syntax-rules ()
-    [(sphere r)            (add-child 'sphere r)]
-    [(sphere #:radius r)   (add-child 'sphere r)]
-    [(sphere #:diameter d) (add-child 'sphere (d . / . 2))]))
+    [(sphere r) (begin
+                  (3d-only 'sphere)
+                  (add-child 'sphere r))]
+    [(sphere #:radius r) (begin
+                           (3d-only 'sphere)
+                           (add-child 'sphere r))]
+    [(sphere #:diameter d) (begin
+                             (3d-only 'sphere)
+                             (add-child 'sphere (d . / . 2)))]))
 
 (define (half-space p d)
+  (3d-only 'half-space)
   (add-child 'half p d))
 
 (define (rects sx sy sz)
+  (3d-only 'rects)
   (add-child 'box (vec3 sx sy sz)))
 
 (define (capsule height radius)
+  (3d-only 'capsule)
   (add-child 'capsule height radius))
 
 (define (cube s)
+  (3d-only 'cube)  ; Preempt the rects message
   (rects s s s))
 
 (define (rect sx sy)
+  (2d-only 'rect)
   (add-child 'rect sx sy))
 
 (define-syntax circle
   (syntax-rules ()
-    [(circle r)            (add-child 'circle r)]
-    [(circle #:radius r)   (add-child 'circle r)]
-    [(circle #:diameter d) (add-child 'circle d)]))
+    [(circle r) (begin
+                  (2d-only 'circle)
+                  (add-child 'circle r))]
+    [(circle #:radius r) (begin
+                           (2d-only 'circle)
+                           (add-child 'circle r))]
+    [(circle #:diameter d) (begin
+                             (2d-only 'circle)
+                             (add-child 'circle d))]))
 
 (define (interpolation-surface args)
+  (3d-only 'interpolation-surface)
   (define epsilon 1/100)
   (define (syntax->constraints s)
     (match s
@@ -252,3 +308,29 @@
   (let* ([cs (apply append (map syntax->constraints args))]
          [solution (solve-interpolated-surface-system cs)])
     (add-child 'interpolation-surface solution)))
+
+
+; ------------------------------------------------------------------------------
+; Utilities for mode-sensitive literal handling.
+
+(define (three-coordinates called-as v)
+  (when (current-mode? '2d)
+    (raise-argument-error called-as
+                          "2d-vector-literal?"
+                          v)))
+
+(define (two-coordinates called-as v)
+  (when (current-mode? '3d)
+    (raise-argument-error called-as
+                          "3d-vector-literal?"
+                          v)))
+  
+(define (3d-only called-as)
+  (unless (current-mode? '3d)
+    (error called-as "cannot be used in a 2D context")))
+
+(define (2d-only called-as)
+  (unless (current-mode? '2d)
+    (error called-as "cannot be used in a 3D context")))
+
+

@@ -27,6 +27,7 @@
       [(scale) (canon-scale n)]
       [(rotate) (canon-rotate n)]
       [(extrude) (canon-extrude n)]
+      [(slice) (canon-slice n)]
       [(repeat) (canon-repeat n)]
       [(radial-repeat) (canon-radial-repeat n)]
       [(mirror) (canon-mirror n)]
@@ -179,6 +180,12 @@
 ;
 ; Extrusions don't get merged.
 (define canon-extrude (unary-canon (lambda (n _) (list n))))
+
+; A canonical slice has a single child.  Slicings of more than one child are
+; assumed to be unions of the children and rewritten thus.
+;
+; Slicings don't get merged, though they likely could.
+(define canon-slice (unary-canon (lambda (n _) (list n))))
 
 ; A canonical repeat has a single child.  Repetitions of more than one
 ; child are assumed to be unions of the children and rewritten thus.

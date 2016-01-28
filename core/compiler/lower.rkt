@@ -45,6 +45,7 @@
     [(scale)  (generate-scale node query)]
     [(rotate)  (generate-rotate node query)]
     [(extrude) (generate-extrude node query)]
+    [(slice) (generate-slice node query)]
     [(mirror) (generate-mirror node query)]
     [(repeat) (generate-repeat node query)]
     [(radial-repeat) (generate-radial-repeat node query)]
@@ -93,6 +94,15 @@
           (if expr
             `(add 1 ,expr ,prod)
             prod))))))
+
+; Currently, slice has no impact on code generation, because the actual job of
+; collapsing Z is done by extrude.  This may bear revisiting (TODO).
+(define (generate-slice node query)
+  (unless (= 1 (length (node-children node)))
+    (error "non-canonical node passed to generate:" (node-type node)))
+
+  (generate (first (node-children node)) query))
+
 
 ;
 ; Binary combinators

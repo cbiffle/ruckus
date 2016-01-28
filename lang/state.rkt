@@ -11,7 +11,10 @@
   begin-child
   end-child
   end-root
-  add-child)
+  add-child
+  current-mode?
+  current-mode
+  call-with-mode)
 
 ; ------------------------------------------------------------------------
 ; The node stack used during EDSL interpretation and initial AST building.
@@ -64,3 +67,6 @@
 
 (define (current-mode)
   (*mode*))
+
+(define (current-mode? mode)
+  (eq? mode (*mode*)))
