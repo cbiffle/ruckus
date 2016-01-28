@@ -8,6 +8,7 @@
 
 (define racket-launcher-libraries
   '("viz/view3d.rkt"
+    "viz/view2d.rkt"
     "viz/shaderdump.rkt"
     "out/outline.rkt"
     "out/surface.rkt"
@@ -16,6 +17,7 @@
     "lang/astdump.rkt"))
 (define racket-launcher-names
   '("ruckus-3d"
+    "ruckus-2d"
     "ruckus-dump-glsl"
     "ruckus-export-outline"
     "ruckus-export-surface"
