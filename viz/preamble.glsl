@@ -43,9 +43,20 @@ float dfSphere(float radius, vec3 p) {
   return length(p) - radius;
 }
 
+float dfCircle(float radius, vec3 p) {
+  return length(p.xy) - radius;
+}
+
 float dfBox(vec3 corner, vec3 p) {
   vec3 d = abs(p) - corner;
   return min(max(d.x, max(d.y, d.z)), 0.)
+       + length(max(d, 0.));
+}
+
+float dfRect(float w, float h, vec3 p) {
+  vec2 corner = vec2(w, h);
+  vec2 d = abs(p.xy) - corner;
+  return min(max(d.x, d.y), 0.)
        + length(max(d, 0.));
 }
 

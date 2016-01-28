@@ -32,34 +32,13 @@
       [(radial-repeat) (canon-radial-repeat n)]
       [(mirror) (canon-mirror n)]
       [(sphere half box interpolation-surface capsule) (list n)]
-      [(rect circle) (canon-2d n)]
+      [(rect circle) (list n)]
       [else (error "unknown node type in canonicalize: " (node-type n))])))
 
 ; The root node is rewritten into an implicit union, and is not seen beyond
 ; this point.
 (define (canon-root n)
   (canon-union (struct-copy node n [type 'union])))
-
-; 2D primitives are inflated into 3D primitives with equivalent intersections
-; with the XY plane.
-(define (canon-2d n)
-  (case (node-type n)
-    [(rect)
-     (let ([w (first (node-atts n))]
-           [h (second (node-atts n))])
-       (list (node 'box
-                   (list (vec3 w h (max w h)))
-                   '()
-                   (node-id n)
-                   (node-color n))))]
-    [(circle)
-     (let ([r (first (node-atts n))])
-       (list (node 'sphere
-                   (list r)
-                   '()
-                   (node-id n)
-                   (node-color n))))]
-    ))
 
 ; Several kinds of nodes canonicalize by
 ; - collapsing cases of zero or one child,

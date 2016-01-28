@@ -35,6 +35,8 @@
     [(sphere) (generate-sphere node query)]
     [(half)   (generate-half node query)]
     [(box)   (generate-box node query)]
+    [(rect) (generate-rect node query)]
+    [(circle) (generate-circle node query)]
     [(interpolation-surface) (generate-interpolation-surface node query)]
     [(capsule) (generate-capsule node query)]
     [(union root)  (generate-union node query)]
@@ -81,6 +83,16 @@
   (leaf-generator
     (lambda (query size)
       `(box (c3f ,(vec3-div size 2)) ,query))))
+
+(define generate-rect
+  (leaf-generator
+    (lambda (query w h)
+      `(rect (cf ,(w . / . 2)) (cf ,(h . / . 2)) ,query))))
+
+(define generate-circle
+  (leaf-generator
+    (lambda (query radius)
+      `(circle (cf ,radius) ,query))))
 
 (define generate-interpolation-surface
   (leaf-generator

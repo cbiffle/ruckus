@@ -7,7 +7,9 @@
   smooth-min
   df-sphere
   df-box
-  df-capsule)
+  df-capsule
+  df-rect
+  df-circle)
 
 (require "./math.rkt")
 
@@ -48,4 +50,16 @@
          [t (clamp (((vec3-z q) . * . h) . / . (h . * . h)) 0 1)])
     (- (vec3-length (vec3-sub q (vec3 0 0 (h . * . t))))
        r)))
+
+(define (df-rect w h q)
+  ; TODO: bit of a hack since I have no first-class vec2
+  (let* ([q (vec3 (vec3-x q) (vec3-y q) 0)]
+         [d (vec3-sub (vec3-abs q) (vec3 w h 0))])
+    (+ (min (max (vec3-x d) (vec3-y d)) 0)
+       (vec3-length (vec3-max d (vec3 0 0 0))))))
+
+(define (df-circle r q)
+  ; TODO: bit of a hack since I have no first-class vec2
+  (- (vec3-length (vec3 (vec3-x q) (vec3-y q) 0)) r))
+
 

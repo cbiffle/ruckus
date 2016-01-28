@@ -73,7 +73,9 @@
     [(list 'radial-project q a s) (rkt-fn 'radial-project q a s)]
 
     [(list 'box c p) (rkt-fn 'df-box c p)]
+    [(list 'rect w h p) (rkt-fn 'df-rect w h p)]
     [(list 'sphere r p) (rkt-fn 'df-sphere r p)]
+    [(list 'circle r p) (rkt-fn 'df-circle r p)]
     [(list 'capsule h r p) (rkt-fn 'df-capsule h r p)]
     [(list 'vec3 a b c) (rkt-fn 'vec3 a b c)]
     [(list 'proj 3 v sym) (rkt-proj (rkt-expr v) sym)] ; TODO
