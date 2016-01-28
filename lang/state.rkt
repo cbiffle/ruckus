@@ -18,9 +18,14 @@
 
 (define *stack* (make-parameter '()))
 (define *color* (make-parameter #f))
+(define *mode*  (make-parameter '3d))
 
 (define (call-with-empty-stack body)
   (parameterize ([*stack* '()])
+    (body)))
+
+(define (call-with-mode mode body)
+  (parameterize ([*mode* mode])
     (body)))
 
 (define (call-with-color c body)
@@ -56,3 +61,6 @@
 (define (add-child type . atts)
   (apply begin-child type atts)
   (end-child))
+
+(define (current-mode)
+  (*mode*))
