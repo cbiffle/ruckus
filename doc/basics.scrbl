@@ -2,32 +2,174 @@
 
 @(require pict)
 
-@title{Ruckus Language Basics}
+@title{Ruckus Language Reference}
+
+Ruckus design files start with a @italic{lang line}:
 
 @defmodule[ruckus #:lang]
 @require[(for-label ruckus)]
 
-@section{3D Primitives}
+Ruckus is based on @hyperlink["http://racket-lang.org/"]{Racket}.  You don't
+need to know Racket to do basic work in Ruckus, but as designs become more
+complicated, Racket's features can be a huge help.
 
-3D objects are, by default, always placed at the origin.  Use @racket[at] or
-other transforms to place them where they're needed.
 
-@defproc*[([(sphere [radius real?]) void?]
-           [(sphere [#:radius radius real?]) void?]
-           [(sphere [#:diameter diameter real?]) void?])]{
-  Generates a sphere, centered at the origin, with its size specified by either
-  @racket[radius] or @racket[diameter].
+@section{Coordinates}
+
+All coordinates in Ruckus are relative.
+
+Primitive objects (see below) are always created at the origin of their
+@italic{local coordinate frame}.  The relationship between an object's local
+coordinates and @italic{world coordinates} can be controlled by transforms,
+such as @racket[at] and @racket[rotate].
+
+For example, this sphere sits at the origin:
+
+@codeblock{
+  #lang ruckus
+
+  (sphere 100)
 }
 
-@defproc[(rects [size-x real?]
-                [size-y real?]
-                [size-z real?]) void?]{
+We can make two spheres, separated by 200 units, using @racket[at] to shift
+them in space:
+
+@codeblock{
+  #lang ruckus
+
+  (at '(100 0 0) (sphere 100))
+  (at '(-100 0 0) (sphere 100))
+}
+
+The coordinates are relative, not absolute; they measure distance from the
+local origin.  We can shift the local origin by wrapping the whole shebang in
+more @racket[at].  The coordinates get added together.  Thus, here we define
+two spheres, at locations @racket['(100 55 0)] and @racket['(-100 55 0)].  They
+are still 200 units apart, just shifted by 55 units in one direction.
+
+@codeblock{
+  #lang ruckus
+
+  (at '(0 55 0)
+    (at '(100 0 0) (sphere 100))
+    (at '(-100 0 0) (sphere 100)))
+}
+
+This might seem a little pathological, but if we wrap the inside in a function, we have a reusable chunk we can place wherever we want:
+
+@codeblock{
+  #lang ruckus
+
+  (define (spheres-200-units-apart)
+    (at '(100 0 0) (sphere 100))
+    (at '(-100 0 0) (sphere 100)))
+
+  (at '(0 55 0) (spheres-200-units-apart))
+  (at '(0 110 0) (spheres-200-units-apart))
+  ; ... and so on
+}
+
+This reusability is the real strength of using relative coordinates.
+
+
+@section{Contexts}
+
+Ruckus distinguishes between 2D and 3D contexts.
+
+The top level of a design file is a 3D context.  In a 3D context, you can only
+use 3D primitives, like @racket[sphere] and @racket[rects], because 2D
+primitives don't make sense in 3D.
+
+@codeblock{
+  #lang ruckus
+  
+  ; 3D context here.
+  (sphere 100)
+}
+
+Any function called from a 3D context is also in a 3D context:
+
+@codeblock{
+  #lang ruckus
+
+  (define (my-sphere)
+    ; Because this is called from a 3D context, its contents are
+    ; also in a 3D context.
+    (sphere 100))
+
+  (my-sphere)  ; called here
+}
+
+You can switch into a 2D context by using a @italic{projection transform},
+which specifies how to project flat 2D objects into 3D space.  Currently, only
+one projection transform is available: @racket[extrude].
+
+Within a 2D context you can only use 2D primitives, such as @racket[circle] and @racket[rect].
+
+@codeblock{
+  #lang ruckus
+
+  ; 3D context on the outside...
+  (extrude 100
+    ; ...but 2D context on the inside.
+    (circle 100))
+}
+
+To complete the circle, you can also use 3D shapes in a 2D context by using a
+@italic{slicing transform}, which specifies how to smash a 3D object into a
+flat 2D shape.  Currently, only one slicing transform is available:
+@racket[slice], which produces a cross-section.
+
+@codeblock{
+  #lang ruckus
+
+  ; 3D context on the outside...
+  (extrude 100
+    ; ...2D context on the inside...
+    (circle 100)
+    (slice
+      ; ...and a chewy 3D center.
+      (cube 170)))
+}
+
+
+@section{Basic Types}
+
+@defproc[(coord? [v any?]) boolean?]{
+  Returns @racket[#t] if @racket[v] is a coordinate, @racket[#f] otherwise.
+
+  A coordinate is a list of real numbers, where the length of the list
+  corresponds to the current context: three numbers in 3D, two in 2D.
+}
+
+
+@section{3D Primitives}
+
+These primitives can be employed in any 3D context.
+
+@defform*[((sphere radius)
+           (sphere #:radius radius)
+           (sphere #:diameter diameter))
+          #:contracts ([radius real?] [diameter real?])]{
+  Generates a sphere, centered at the origin, with its size specified by either
+  @racket[radius] or @racket[diameter].
+
+  Radius is the default way of specifying a sphere.  We provide the
+  @racket[#:diameter] keyword as an option, because otherwise some designs wind
+  up littered with divide-by-twos to convert specified diameters to radii.  The
+  @racket[#:radius] keyword can help contrast with @racket[#:diameter] in
+  designs where both are used.
+}
+
+@defform[(rects size-x size-y size-z)
+         #:contracts ([size-x real?] [size-y real?] [size-z real?])]{
   Generates a rectangular solid, centered around the origin, with the extent
   along each axis given by @racket[size-x], @racket[size-y], and
   @racket[size-z].
 }
 
-@defproc*[([(cube [size real?]) void?])]{
+@defform[(cube size)
+         #:contracts ([size real?])]{
   Shorthand for a rectangular solid that is the same size along each axis, i.e.
   a cube.
 
@@ -39,7 +181,8 @@ other transforms to place them where they're needed.
   }
 }
 
-@defproc*[([(capsule [height real?] [radius real?]) void?])]{
+@defform[(capsule height radius)
+         #:contracts ([height real?] [radius real?])]{
   A capsule is like a cylinder, but its ends are rounded like spheres instead
   of flat.
 
@@ -52,13 +195,17 @@ other transforms to place them where they're needed.
   height (* 2 radius))].
 }
 
-@defproc*[([(half-space [normal coord?] [distance real?]) void?])]{
+@defform[(half-space normal distance)
+         #:contracts ([normal coord?] [distance real?])]{
   Generates a half-space, which divides all of space into two sections (inside
   and outside) split by a plane.
 
   The plane's normal is given by @racket[normal], and its distance from the
   origin along the normal is @racket[distance].  Positive distances include the
   origin in the "inside" part of space; negative distances exclude it.
+
+  The @racket[normal] will be normalized internally by Ruckus, so you can use
+  any vector.
 }
 
 @defform[(interpolation-surface constraints)]{
@@ -80,20 +227,28 @@ other transforms to place them where they're needed.
   This is still under development and is pretty hairy.
 }
 
+
 @section{2D Primitives}
 
-@defproc*[([(circle [radius real?]) void?]
-           [(circle [#:radius radius real?]) void?]
-           [(circle [#:diameter diameter real?]) void?])]{
+@defform*[((circle radius)
+           (circle #:radius radius)
+           (circle #:diameter diameter))
+          #:contracts ([radius real?] [diameter real?])]{
   Generates a circle whose size is specified by either @racket[radius] or
   @racket[diameter].
+
+  @racket[radius] is the default way of specifying a circle.  We provide the
+  @racket[#:diameter] keyword as an alternative for designs that prefer to
+  specify dimensions that way, and @racket[#:radius] for contrast in designs
+  that mix both styles.
 }
 
-@defproc*[([(rect [size-x real?]
-                  [size-y real?]) void?])]{
+@defform[(rect size-x size-y)
+         #:contracts ([size-x real?] [size-y real?])]{
   Generates a rectangle, centered around the origin, whose dimensions on the X
   and Y axis are given by @racket[size-x] and @racket[size-y], respectively.
 }
+
 
 @section{Combinators}
 
@@ -146,7 +301,8 @@ other transforms to place them where they're needed.
   @bitmap{doc/example-difference.png}
 }
 
-@defform[(smooth-union radius form ...)]{
+@defform[(smooth-union radius form ...)
+         #:contracts ([radius real?])]{
   Like @racket[union], but the creases where the child forms would intersect
   are rounded to a minimum curvature @racket[radius].
 
@@ -161,7 +317,8 @@ other transforms to place them where they're needed.
 
 @section{Transforms}
 
-@defform[(at vector forms ...)]{
+@defform[(at vector forms ...)
+         #:contracts ([vector coord?])]{
   Shifts child forms so that their origin is at the point @racket[vector] in the
   current coordinate space.
 
@@ -180,13 +337,14 @@ other transforms to place them where they're needed.
   }
 }
 
-@defform[(translate vector forms ...)]{
+@defform[(translate vector forms ...)
+         #:contracts ([vector coord?])]{
   @racket[translate] is a wordy synonym for @racket[at].
 }
 
 @defform*[((scale ratio forms ...)
            (scale vector forms ...))
-          #:contracts ([ratio real?] [vector (listof real?)])]{
+          #:contracts ([ratio real?] [vector (coord?)])]{
   Adjusts the size of child forms around their common origin.
 
   When called with @racket[ratio], the single ratio is applied equally to all
@@ -207,7 +365,7 @@ other transforms to place them where they're needed.
 
 @defform*[((rotate angle forms ...)
            (rotate angle #:around axis forms ...))
-         #:contracts ([angle real?] [axis (listof real?)])]{
+         #:contracts ([angle real?] [axis (or/c 'x 'y 'z coord?)])]{
   Rotates child forms around their common origin.
 
   In 2D contexts, the first version must be used, and the rotation is always
@@ -232,7 +390,7 @@ other transforms to place them where they're needed.
 }
 
 @defform[(color col forms ...)
-         #:contracts ([col (listof real?)])]{
+         #:contracts ([col (color?)])]{
   Assigns a color to child forms.
 
   The color @racket[col] is represented as a list of real numbers,
@@ -306,12 +464,14 @@ other transforms to place them where they're needed.
   This version is illegal in 2D contexts, since there is no Z axis.
 }
 
-@defform*[((repeat-x period forms ...))]{
+@defform[(repeat-x period forms ...)
+         #:contracts ([period real?])]{
   Takes a @racket[period]-unit-wide slice of the child forms around the YZ
   plane and repeats it infinitely along the X axis.
 }
 
-@defform[(radial-repeat count forms ...)]{
+@defform[(radial-repeat count forms ...)
+         #:contracts ([count integer?])]{
   Makes the child forms @racket[count]-way radially symmetric around the Z
   axis.
 }

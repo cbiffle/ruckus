@@ -5,6 +5,9 @@
 
 @title{Getting Your Ruckus On}
 
+@margin-note{During your whirlwind tour, these margin notes will provide more
+details and background for readers who are interested.  Or bored.}
+
 This is a whirlwind walkthrough of creating a simple Ruckus design.  We'll gloss
 over details and skip theory to give you a feel for how the tools feel in
 practice.  The later sections in this document will fill in the gaps.
@@ -16,6 +19,13 @@ You should have completed the @secref{prerequisites}.
 
 Ruckus designs are stored as text files.  Create a text file called
 @exec{sphere.rkt} and enter:
+
+@margin-note{Fun fact: Ruckus design files are actually valid programs written
+in a language called @hyperlink["http://racket-lang.org/"]{Racket}.  Racket is
+a language in the
+@hyperlink["https://en.wikipedia.org/wiki/Lisp_(programming_language)"]{Lisp}
+family, descended from
+@hyperlink["https://en.wikipedia.org/wiki/Scheme_(programming_language)"]{Scheme}.} 
 
 @codeblock|{
   #lang ruckus
@@ -44,7 +54,7 @@ because it's a sphere.
 
 Let's alter the design with some simple constructive solid geometry: let's
 subtract the sphere from a cube.  Without exiting the visualizer, edit the
-design file to read as follows:
+design file to read as follows (parentheses matter!):
 
 @codeblock|{
   #lang ruckus
@@ -64,6 +74,12 @@ trinket; let's 3D print it.
 
 
 @section{Preparing for Printing}
+
+@margin-note{Ruckus has no particular opinion on how big a unit should be.  If
+you're more comfortable working in centimeters, or inches, go for it.  You may
+need to specify the units later --- for example, the 2D outline exporter has a
+command line option.  For 3D, common file formats leave the units implicit, so
+you'll have to specify them in whatever tool @italic{loads} your file.}
 
 To move a design into the real world, we need to decide how big one Ruckus
 "unit" is.  3D printing software usually assumes that one design unit is one
@@ -88,24 +104,26 @@ format called STL, using Ruckus's surface exporter.  We'll call the output file
 
 @exec{ruckus-export-surface sphere.rks sphere.stl}
 
-You can view the result in a tool such as MeshLab.  It should look something
-like this:
+You can view the result in a tool such as
+@hyperlink["http://meshlab.sourceforge.net/"]{MeshLab}.  It should look
+something like this:
 
 @bitmap{doc/sphere-cube-export-low.png}
 
 
-@section{Reducing Aliasing}
+@section{Improving Export Quality}
+
+@margin-note{The coarseness of the surfaces in the image above is a phenomenon
+called @italic{aliasing}.  To save compute-time and reduce file size, Ruckus
+exports your design using 1-unit triangles by default.  The @exec{-q} flag
+adjusts this dimension, called the @italic{surface quantum}.  You probably
+don't need to make it incredibly small, since many 3D printers don't have great
+resolution beneath a millimeter anyway.  Plus, each time you halve the quantum,
+processing time increases by 4x.}
 
 Notice that, while the design looks smooth and sharp in the visualizer, it now
-has slightly rounded corners and some visible artifacts.  3D printers want
-objects described using tiny triangles, and Ruckus has used 1mm triangles to
-cover the surface of our design.  If that's not good enough --- and if your
-3D printer is high enough resolution that you'll notice the difference! ---
-you can shrink the size of the triangles by adjusting the surface quantum
-parameter @exec{-q}.
-
-Let's set it to 0.25, ensuring that any aliasing artifacts are no larger than a
-quarter of a millimeter.
+has slightly rounded corners and some visible artifacts.  We can reduce this
+by adjusting the @exec{-q} parameter:
 
 @exec{ruckus-export-surface -q 0.25 sphere.rks sphere.stl}
 
