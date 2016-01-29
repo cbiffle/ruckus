@@ -142,6 +142,21 @@ flat 2D shape.  Currently, only one slicing transform is available:
   corresponds to the current context: three numbers in 3D, two in 2D.
 }
 
+@defproc[(color? [v any?]) boolean?]{
+  Returns @racket[#t] if @racket[v] is a color literal, @racket[#f] otherwise.
+
+  A color literal may be:
+
+  @itemlist[
+    @item{A list of three real numbers, representing red, green, and blue,
+          where @racket[1.0] is full intensity and @racket[0] is nothing.}
+    @item{A symbolic color name taken from the
+          @hyperlink["https://en.wikipedia.org/wiki/X11_color_names"]{X11 color
+          names}, lower-cased and with dashes in place of spaces, e.g.
+          @racket['light-goldenrod-yellow].}
+  ]
+}
+
 
 @section{3D Primitives}
 
@@ -390,7 +405,7 @@ These primitives can be employed in any 3D context.
 }
 
 @defform[(color col forms ...)
-         #:contracts ([col (color?)])]{
+         #:contracts ([col color?])]{
   Assigns a color to child forms.
 
   The color @racket[col] is represented as a list of real numbers,

@@ -8,11 +8,15 @@
 
 (require "../core/math.rkt")
 (require "../core/model.rkt")
+(require "./colors.rkt")
 (require "./evaluator.rkt")
 (require "./interpolation.rkt")
 (require "./state.rkt")
 
 (provide
+  color?
+  coord?
+
   union
   smooth-union
   intersection
@@ -44,6 +48,13 @@
   rect
   circle
   interpolation-surface)
+
+(define (coord? v)
+  (let ([target-length (if (current-mode? '2d) 2 3)])
+    (and (list? v)
+         (eq? target-length (length v))
+         (andmap real? v))))
+
 
 ; ------------------------------------------------------------------------
 ; Combinators.
@@ -245,7 +256,7 @@
   (call-with-radial-repeat freq (lambda () b bs ...)))
 
 (define-syntax-rule (color c b bs ...)
-  (call-with-color c (lambda () b bs ...)))
+  (call-with-color (normalize-color c) (lambda () b bs ...)))
 
 ; ------------------------------------------------------------------------
 ; Primitives and basic derived shapes.
