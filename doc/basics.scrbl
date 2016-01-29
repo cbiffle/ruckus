@@ -126,7 +126,7 @@ other transforms to place them where they're needed.
       (sphere 200))
   }
 
-  @bitmap{example-union.png}
+  @bitmap{doc/example-union.png}
 }
 
 @defform[(intersection form ...)]{
@@ -139,7 +139,7 @@ other transforms to place them where they're needed.
       (sphere 200))
   }
 
-  @bitmap{example-intersection.png}
+  @bitmap{doc/example-intersection.png}
 }
 
 @defform[(difference first-form other-forms ...)]{
@@ -158,7 +158,7 @@ other transforms to place them where they're needed.
       (sphere 200))
   }
 
-  @bitmap{example-difference.png}
+  @bitmap{doc/example-difference.png}
 }
 
 @defform[(smooth-union radius form ...)]{
@@ -171,7 +171,7 @@ other transforms to place them where they're needed.
       (sphere 200))
   }
 
-  @bitmap{example-smooth-union.png}
+  @bitmap{doc/example-smooth-union.png}
 }
 
 @section{Transforms}
@@ -214,7 +214,7 @@ other transforms to place them where they're needed.
     (scale '[1 1/2 1/5] (cube 330))
   }
 
-  @bitmap{example-scale.png}
+  @bitmap{doc/example-scale.png}
 }
 
 @defform*[((rotate angle forms ...)
@@ -271,7 +271,7 @@ other transforms to place them where they're needed.
       (cube 330))
   }
 
-  @bitmap{example-iso.png}
+  @bitmap{doc/example-iso.png}
 }
 
 @defform[(extrude height forms ...)
@@ -292,7 +292,7 @@ other transforms to place them where they're needed.
           (cube 200))))
   }
 
-  @bitmap{example-extrude.png}
+  @bitmap{doc/example-extrude.png}
 }
 
 @defform[(slice forms ...)]{

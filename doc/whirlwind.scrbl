@@ -32,7 +32,7 @@ Save the file and display it using Ruckus's interactive visualizer,
 After a bit of churning, a window should pop up containing a little sphere,
 something like this:
 
-@bitmap{sphere-render.png}
+@bitmap{doc/sphere-render.png}
 
 In the visualizer, you can use a mouse wheel or scroll gesture to zoom in and
 out, and dragging will rotate the design.  But we can't tell it's rotating yet,
@@ -55,7 +55,7 @@ design file to read as follows:
 Switch back to the visualizer and press @exec{F5} to recompile the design.  If
 you rotate the design by dragging the mouse, it should now look like this:
 
-@bitmap{sphere-cube-render.png}
+@bitmap{doc/sphere-cube-render.png}
 
 It's now a cube with a sphere-shaped void inside.  It would make a lovely desk
 trinket; let's 3D print it.
@@ -88,7 +88,7 @@ format called STL, using Ruckus's surface exporter.  We'll call the output file
 You can view the result in a tool such as MeshLab.  It should look something
 like this:
 
-@bitmap{sphere-cube-export-low.png}
+@bitmap{doc/sphere-cube-export-low.png}
 
 
 @section{Reducing Aliasing}
@@ -109,7 +109,7 @@ quarter of a millimeter.
 The exporter is much slower (16x slower to be exact), but the output is much
 prettier:
 
-@bitmap{sphere-cube-export-higher.png}
+@bitmap{doc/sphere-cube-export-higher.png}
 
 If you have enough CPU oomph available, or are just willing to wait, you can
 crank the quantum arbitrarily low.  However, our 3D printer will probably not
