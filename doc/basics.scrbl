@@ -4,6 +4,9 @@
 
 @title{Ruckus Language Basics}
 
+@defmodule[ruckus]
+@require[(for-label ruckus)]
+
 @section{Definitions}
 
 Ruckus design files consist of @italic{definitions}.  Every file must contain
@@ -176,8 +179,7 @@ other transforms to place them where they're needed.
 
 @section{Transforms}
 
-@defform*[((at vector forms ...)
-           (translate vector forms ...))]{
+@defform[(at vector forms ...)]{
   Shifts child forms so that their origin is at the point @racket[vector] in the
   current coordinate space.
 
@@ -194,6 +196,10 @@ other transforms to place them where they're needed.
       (cube 330)
       (sphere 200))
   }
+}
+
+@defform[(translate vector forms ...)]{
+  @racket[translate] is a wordy synonym for @racket[at].
 }
 
 @defform*[((scale ratio forms ...)
@@ -301,21 +307,21 @@ other transforms to place them where they're needed.
   which can then be manipulated or extruded.
 }
 
-@defform*[((mirror-x forms ...)
-           (mirror-y forms ...)
-           (mirror-z forms ...))]{
-  Mirrors child forms around an axis-aligned plane, causing the result to be
-  symmetric around that plane.
+@defform[(mirror-x forms ...)]{
+  Mirrors child forms around the YZ plane, causing the result to be symmetric
+  along the X axis and symmetric around the YZ plane.
+}
 
-  @racket[mirror-x] mirrors the positive-X side of space to the negative-X
-  side.  The result is symmetric around the YZ plane.
+@defform[(mirror-y forms ...)]{
+  Mirrors child forms around the XZ plane, causing the result to be symmetric
+  along the Y axis and symmetric around the XZ plane.
+}
 
-  @racket[mirror-y] mirrors the positive-Y side of space to the negative-Y
-  side.  The result is symmetric around the XZ plane.
+@defform[(mirror-z forms ...)]{
+  Mirrors child forms around the XY plane, causing the result to be symmetric
+  along the Z axis and symmetric around the XY plane.
 
-  @racket[mirror-z] mirrors the positive-Z side of space to the negative-Z
-  side.  The result is symmetric around the XY plane.  This version is illegal
-  in 2D contexts.
+  This version is illegal in 2D contexts, since there is no Z axis.
 }
 
 @defform*[((repeat-x period forms ...))]{

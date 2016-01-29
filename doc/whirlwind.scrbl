@@ -1,6 +1,7 @@
 #lang scribble/manual
 
-@(require pict)
+@require[pict]
+@require[(for-label ruckus)]
 
 @title{Getting Your Ruckus On}
 
