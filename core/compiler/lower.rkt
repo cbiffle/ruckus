@@ -226,10 +226,10 @@
 (define generate-scale
   (unary-bracket-combinator
     (lambda (q scale)
-      (let ([scale-inv (map (lambda (n) (1 . / . n)) scale)])
+      (let ([scale-inv (vec3-div 1 scale)])
         `(mul 3 ,q (c3f ,scale-inv))))
     (lambda (q d scale)
-      (let ([correction (apply min scale)])
+      (let ([correction (min (vec3-x scale) (vec3-y scale) (vec3-z scale))])
         `(mul 1 ,d (cf ,correction))))))
 
 (define generate-extrude
