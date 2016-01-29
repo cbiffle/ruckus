@@ -1,6 +1,8 @@
 #lang scribble/manual
 
 @require[pict]
+@require{./utils.rkt}
+@require[racket/runtime-path]
 @require[(for-label ruckus)]
 
 @title{Getting Your Ruckus On}
@@ -43,7 +45,7 @@ Save the file and display it using Ruckus's interactive visualizer,
 After a bit of churning, a window should pop up containing a little sphere,
 something like this:
 
-@bitmap{doc/sphere-render.png}
+@image+{sphere-render.png}
 
 In the visualizer, you can use a mouse wheel or scroll gesture to zoom in and
 out, and dragging will rotate the design.  But we can't tell it's rotating yet,
@@ -67,7 +69,7 @@ design file to read as follows (parentheses matter!):
 Switch back to the visualizer and press @exec{F5} to recompile the design.  If
 you rotate the design by dragging the mouse, it should now look like this:
 
-@bitmap{doc/sphere-cube-render.png}
+@image+{sphere-cube-render.png}
 
 It's now a cube with a sphere-shaped void inside.  It would make a lovely desk
 trinket; let's 3D print it.
@@ -108,7 +110,7 @@ You can view the result in a tool such as
 @hyperlink["http://meshlab.sourceforge.net/"]{MeshLab}.  It should look
 something like this:
 
-@bitmap{doc/sphere-cube-export-low.png}
+@image+{sphere-cube-export-low.png}
 
 
 @section{Improving Export Quality}
@@ -130,7 +132,7 @@ by adjusting the @exec{-q} parameter:
 The exporter is much slower (16x slower to be exact), but the output is much
 prettier:
 
-@bitmap{doc/sphere-cube-export-higher.png}
+@image+{sphere-cube-export-higher.png}
 
 If you have enough CPU oomph available, or are just willing to wait, you can
 crank the quantum arbitrarily low.  However, our 3D printer will probably not

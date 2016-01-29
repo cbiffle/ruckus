@@ -1,6 +1,7 @@
 #lang scribble/manual
 
-@(require pict)
+@require[pict]
+@require[racket/runtime-path]
 
 @title{Ruckus Language Reference}
 
@@ -267,6 +268,14 @@ These primitives can be employed in any 3D context.
 
 @section{Combinators}
 
+@define-runtime-path[img-example-union]{example-union.png}
+@define-runtime-path[img-example-intersection]{example-intersection.png}
+@define-runtime-path[img-example-difference]{example-difference.png}
+@define-runtime-path[img-example-smooth-union]{example-smooth-union.png}
+@define-runtime-path[img-example-scale]{example-scale.png}
+@define-runtime-path[img-example-iso]{example-iso.png}
+@define-runtime-path[img-example-extrude]{example-extrude.png}
+
 @defform[(union form ...)]{
   Combines all its child forms so that they act as a single object.  The result
   is as if each of the children were simply overlaid on the others: any piece
@@ -281,7 +290,7 @@ These primitives can be employed in any 3D context.
       (sphere 200))
   }
 
-  @bitmap{doc/example-union.png}
+  @image[img-example-union]
 }
 
 @defform[(intersection form ...)]{
@@ -294,7 +303,7 @@ These primitives can be employed in any 3D context.
       (sphere 200))
   }
 
-  @bitmap{doc/example-intersection.png}
+  @image[img-example-intersection]
 }
 
 @defform[(difference first-form other-forms ...)]{
@@ -313,7 +322,7 @@ These primitives can be employed in any 3D context.
       (sphere 200))
   }
 
-  @bitmap{doc/example-difference.png}
+  @image[img-example-difference]
 }
 
 @defform[(smooth-union radius form ...)
@@ -327,7 +336,7 @@ These primitives can be employed in any 3D context.
       (sphere 200))
   }
 
-  @bitmap{doc/example-smooth-union.png}
+  @image[img-example-smooth-union]
 }
 
 @section{Transforms}
@@ -375,7 +384,7 @@ These primitives can be employed in any 3D context.
     (scale '[1 1/2 1/5] (cube 330))
   }
 
-  @bitmap{doc/example-scale.png}
+  @image[img-example-scale]
 }
 
 @defform*[((rotate angle forms ...)
@@ -432,7 +441,7 @@ These primitives can be employed in any 3D context.
       (cube 330))
   }
 
-  @bitmap{doc/example-iso.png}
+  @image[img-example-iso]
 }
 
 @defform[(extrude height forms ...)
@@ -453,7 +462,7 @@ These primitives can be employed in any 3D context.
           (cube 200))))
   }
 
-  @bitmap{doc/example-extrude.png}
+  @image[img-example-extrude]
 }
 
 @defform[(slice forms ...)]{
