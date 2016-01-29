@@ -1,1 +1,3 @@
-(define (design) (capsule 500 50))
+#lang ruckus
+
+(capsule 500 50)

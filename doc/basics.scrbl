@@ -4,26 +4,8 @@
 
 @title{Ruckus Language Basics}
 
-@defmodule[ruckus]
+@defmodule[ruckus #:lang]
 @require[(for-label ruckus)]
-
-@section{Definitions}
-
-Ruckus design files consist of @italic{definitions}.  Every file must contain
-at least one, called @exec{design}.
-
-@codeblock{
-  (define (design)
-    ...)
-}
-
-You can have as many definitions as you like within a design file; only
-@exec{design} is special.
-
-Definitions in Ruckus are exactly the same as
-@hyperlink["https://docs.racket-lang.org/guide/define.html"]{definitions in
-Racket}.
-
 
 @section{3D Primitives}
 

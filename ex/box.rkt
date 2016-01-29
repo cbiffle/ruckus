@@ -1,3 +1,5 @@
+#lang ruckus
+
 ; Material thickness.
 (define th 10)
 
@@ -20,12 +22,6 @@
 (define h-height (height . / . 2))
 (define h-depth (depth . / . 2))
 (define h-th (th . / . 2))
-
-(define (design)
-  ;(assembly 0)
-  (extrude 1000
-           (cs/cut-layout))
-)
 
 (define (cs/cut-layout)
   (cs/base-top)
@@ -102,3 +98,8 @@
     (translate `[,shift 0]
                (repeat-x (2 . * . tab)
                          (rect tab (* 2 th))))))
+
+(assembly 0)
+(extrude 1000
+         (cs/cut-layout))
+

@@ -18,12 +18,12 @@ Ruckus designs are stored as text files.  Create a text file called
 @exec{sphere.rkt} and enter:
 
 @codeblock|{
-  (define (design)
-    (sphere 200))
+  #lang ruckus
+
+  (sphere 200)
 }|
 
-This defines a design containing a sphere, with radius 200 units.  Make sure the
-parentheses are exactly as shown.
+This defines a Ruckus design containing a sphere, with radius 200 units.
 
 Save the file and display it using Ruckus's interactive visualizer,
 @exec{viz/spheretrace.rkt}:
@@ -47,10 +47,11 @@ subtract the sphere from a cube.  Without exiting the visualizer, edit the
 design file to read as follows:
 
 @codeblock|{
-  (define (design)
-    (difference
-      (cube 330)
-      (sphere 200)))
+  #lang ruckus
+
+  (difference
+    (cube 330)
+    (sphere 200))
 }|
 
 Switch back to the visualizer and press @exec{F5} to recompile the design.  If
@@ -70,11 +71,12 @@ millimeter, so let's do that.  Our current design would be 330mm across --- much
 too big for a desk trinket!  Let's scale the whole thing down by a factor of 10.
 
 @codeblock|{
-  (define (design)
-    (scale 1/10
-      (difference
-        (cube 330)
-        (sphere 200))))
+  #lang ruckus
+
+  (scale 1/10
+    (difference
+      (cube 330)
+      (sphere 200)))
 }|
 
 Reload the design in the visualizer using @exec{F5}.  It got tiny, you may need
