@@ -64,16 +64,32 @@ to install Racket manually on such computers.
 
 @section{Ruckus Source Code}
 
-Ruckus is not yet being publicly distributed.  Contact me.
+@subsection{Using the Package}
+
+The easiest way to install Ruckus is from the Racket package system:
+
+@exec{raco pkg install ruckus}
+
+Note that this will install the Ruckus executables in a directory that is
+probably not in your path, something like:
+
+@margin-note{Note that this depends on your Racket version.  I don't know why
+the Racket folks want us to edit our @exec{.profile} every time Racket's
+version changes.}
+
+@exec{~/.racket/6.3/bin/}
+
+You will either need to add this to your @exec{PATH}, or manually type it in
+front of every Ruckus command.
+
+@subsection{The Hard Way}
+
+Alternatively, you can obtain the source code directly from the
+@hyperlink["https://github.com/cbiffle/ruckus"]{Ruckus GitHub repository}.
 
 Once you have a copy of the source code, change into the directory and run
 
 @exec{raco pkg install}
 
-This will make the Ruckus executables available in a directory that is probably
-not in your path, something like:
-
-@exec{~/.racket/6.3/bin/}
-
-Find the right directory (in the output from @exec{raco pkg install}) and add
-it to your path.
+The same warning about the executables not being in your path (above) applies
+to manual installations.
