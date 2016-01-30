@@ -1,0 +1,33 @@
+Ruckus: Procedural CAD for Weirdos
+==================================
+
+**What is this?**
+
+Ruckus is a language for describing solid 2D and 3D objects.
+
+**Why would I want to describe such things in text?**
+
+Because:
+
+- It's easier to precisely express certain kinds of things in text.
+- You can apply software engineering techniques, such as abstraction and
+  generic code, to building physical objects.
+- You can bring the full weight of text processing and generation tools to bear
+  on CAD, starting with good version control.
+
+**Is this a new idea?**
+
+Not really.  In the open source space, [OpenSCAD](http://openscad.org) kicked
+off the current round of fascination with this idea.
+
+**Why not use OpenSCAD?**
+
+Please do!
+
+In my experience, OpenSCAD degrades quickly in unexpected ways when designs
+become too complex (e.g. rendering a blank screen instead of an object when one
+parameter changes slightly).  Its design language is underspecified for my
+taste, leading to silent failures if you forget to initialize a variable or omit
+a function parameter.
+
+So I built something different that better-suited my taste.
