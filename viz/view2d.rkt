@@ -1,6 +1,7 @@
 #lang racket/gui
 
-(require "./two-viewer.rkt")
+(require "../core/lazy-require.rkt")
+(lazy-require "./two-viewer.rkt" two-viewer%)
 
 ; ------------------------------------------------------------------------------
 ; Command line interface.
@@ -19,6 +20,10 @@
 
   #:args (design-path)
   (begin
+    (printf "Loading opengl bindings...~n")
+    (time two-viewer%)
+
+    (printf "Creating viewer window...~n")
     (define frame
       (new frame%
            [label "Ruckus 2D"]

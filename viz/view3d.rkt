@@ -1,6 +1,7 @@
 #lang racket/gui
 
-(require "./spheretrace-viewer.rkt")
+(require "../core/lazy-require.rkt")
+(lazy-require "./spheretrace-viewer.rkt" spheretrace-viewer%)
 
 ; ------------------------------------------------------------------------------
 ; Command line interface.
@@ -20,6 +21,10 @@
 
   #:args (design-path)
   (begin
+    (printf "Loading opengl bindings...~n")
+    (time spheretrace-viewer%)
+
+    (printf "Creating viewer window...~n")
     (define frame
       (new frame%
            [label "Ruckus 3D"]
