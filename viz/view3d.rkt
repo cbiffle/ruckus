@@ -1,13 +1,5 @@
 #lang racket/gui
 
-(require racket/runtime-path)
-
-(require (planet "rgl.rkt" ("stephanh" "RacketGL.plt" 1 4)))
-(require ffi/vector)
-
-(require "../core/math.rkt")
-(require "../core/model.rkt")
-(require "./glsl.rkt")
 (require "./spheretrace-viewer.rkt")
 
 ; ------------------------------------------------------------------------------

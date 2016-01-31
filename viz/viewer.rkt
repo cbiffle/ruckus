@@ -2,7 +2,7 @@
 
 ; Basic GL viewer with design loading and recompilation support.
 
-(require (planet "rgl.rkt" ("stephanh" "RacketGL.plt" 1 3)))
+(require opengl)
 (require "../lang/loader.rkt")
 (require "../lang/evaluator.rkt")
 (require "../core/compiler/canon.rkt")

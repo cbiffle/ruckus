@@ -4,7 +4,7 @@
 ; visualization.
 
 (require racket/runtime-path)
-(require (planet "rgl.rkt" ("stephanh" "RacketGL.plt" 1 3)))
+(require opengl)
 (require ffi/vector)
 
 (require "../core/model.rkt")
@@ -23,15 +23,9 @@
 ; ------------------------------------------------------------------------------
 ; OpenGL utilities.
 
-; Utility for getting integer shader parameters by name.
-(define (get-shader-parameter shader pname)
-  (let ([v (s32vector 0)])
-    (glGetShaderiv shader pname v)
-    (s32vector-ref v 0)))
-
 ; Utility for loading the compiler output.
 (define (get-shader-info-log shader)
-  (let ([log-length (get-shader-parameter shader GL_INFO_LOG_LENGTH)])
+  (let ([log-length (glGetShaderiv shader GL_INFO_LOG_LENGTH)])
     (let-values ([(actual-length info-log)
                   (glGetShaderInfoLog shader log-length)])
       (bytes->string/utf-8 info-log #\? 0 actual-length))))
@@ -136,7 +130,7 @@
         (glShaderSource shader (vector-length source) source lengths)
         (glCompileShader shader)
 
-        (if (= (get-shader-parameter shader GL_COMPILE_STATUS) GL_TRUE)
+        (if (= (glGetShaderiv shader GL_COMPILE_STATUS) GL_TRUE)
           ; Success!  Finish the install.
           (begin
             (glAttachShader program shader)
