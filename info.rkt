@@ -2,7 +2,9 @@
 (define name "Ruckus")
 (define version "0.1")
 (define collection "ruckus")
-(define deps '("base" "opengl"))
+(define deps '("base" "gui-lib" "math-lib" "opengl"))
+
+(define build-deps '("racket-doc"))
 
 (define scribblings '(("doc/main.scrbl" (multi-page))))
 (define compile-omit-paths '("ex"))
