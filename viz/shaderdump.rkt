@@ -21,19 +21,22 @@
     (for ([line (in-list (apply-compiler compiler (call-with-edsl-root gen)))])
       (displayln line))))
 
-(command-line
-  #:program "ruckus-dump-glsl"
+(define (run)
+  (command-line
+    #:program "ruckus-dump-glsl"
 
-  #:usage-help
-  "Prints the GLSL code equivalent of a design.  Mostly useful for debugging."
+    #:usage-help
+    "Prints the GLSL code equivalent of a design.  Mostly useful for debugging."
 
-  #:once-any
-  [("-d" "--distance")
-   "Generate shader in distance field evaluator mode (default)."
-   (set! compiler node->glsl-distance)]
-  [("-i" "--id")
-   "Generate shader in ID discrimination mode."
-   (set! compiler node->glsl-disc)]
+    #:once-any
+    [("-d" "--distance")
+     "Generate shader in distance field evaluator mode (default)."
+     (set! compiler node->glsl-distance)]
+    [("-i" "--id")
+     "Generate shader in ID discrimination mode."
+     (set! compiler node->glsl-disc)]
 
-  #:args (design-path)
-  (shaderdump design-path))
+    #:args (design-path)
+    (shaderdump design-path)))
+
+(module+ main (run))

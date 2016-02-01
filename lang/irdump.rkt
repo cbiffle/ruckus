@@ -17,18 +17,21 @@
     (printf "Distance in: ~a~n" d)
     (unless pruning (printf "ID in:       ~a~n" i))))
 
-(command-line
-  #:program "ruckus-dump-ir"
+(define (run)
+  (command-line
+    #:program "ruckus-dump-ir"
 
-  #:usage-help
-  "Dumps the internal compiler IR for a design."
+    #:usage-help
+    "Dumps the internal compiler IR for a design."
 
-  #:once-each
-  [("-p" "--prune")
-   "Prune node discrimination code."
-   (begin
-     (set! pruning #t)
-     (set! pruner prune-statements))]
+    #:once-each
+    [("-p" "--prune")
+     "Prune node discrimination code."
+     (begin
+       (set! pruning #t)
+       (set! pruner prune-statements))]
 
-  #:args (design-path)
-  (irdump design-path))
+    #:args (design-path)
+    (irdump design-path)))
+
+(module+ main (run))

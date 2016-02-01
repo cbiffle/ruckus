@@ -16,16 +16,19 @@
 
 (define process (lambda (x) x))
 
-(command-line
-  #:program "ruckus-dump-ast"
+(define (run)
+  (command-line
+    #:program "ruckus-dump-ast"
 
-  #:usage-help
-  "Dumps the EDSL-level abstract syntax tree for a design."
+    #:usage-help
+    "Dumps the EDSL-level abstract syntax tree for a design."
 
-  #:once-each
-  [("-c" "--canonical")
-   "Rewrite the AST into canonical form."
-   (set! process (compose first canonicalize))]
+    #:once-each
+    [("-c" "--canonical")
+     "Rewrite the AST into canonical form."
+     (set! process (compose first canonicalize))]
 
-  #:args (design-path)
-  (astdump design-path))
+    #:args (design-path)
+    (astdump design-path)))
+
+(module+ main (run))

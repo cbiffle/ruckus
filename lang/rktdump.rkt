@@ -13,19 +13,22 @@
          [s (make-s-expr (call-with-edsl-root gen))])
     (pretty-write s)))
 
-(command-line
-  #:program "ruckus-dump-rkt"
+(define (run)
+  (command-line
+    #:program "ruckus-dump-rkt"
 
-  #:usage-help
-  "Dumps the Racket expression describing a design mathematically."
+    #:usage-help
+    "Dumps the Racket expression describing a design mathematically."
 
-  #:once-any
-  [("-d" "--distance")
-   "Generate distance field evaluator code (default)."
-   (set! make-s-expr node->distance-s-expr)]
-  [("-i" "--id")
-   "Generate node ID discriminator code."
+    #:once-any
+    [("-d" "--distance")
+     "Generate distance field evaluator code (default)."
+     (set! make-s-expr node->distance-s-expr)]
+    [("-i" "--id")
+     "Generate node ID discriminator code."
      (set! make-s-expr node->disc-s-expr)]
 
-  #:args (design-path)
-  (rktdump design-path))
+    #:args (design-path)
+    (rktdump design-path)))
+
+(module+ main (run))
