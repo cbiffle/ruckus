@@ -6,7 +6,7 @@
 
 (define build-deps '("racket-doc"))
 
-(define scribblings '(("doc/main.scrbl" (multi-page))))
+(define scribblings '(("doc/ruckus.scrbl" (multi-page))))
 (define compile-omit-paths '("ex"))
 
 (define racket-launcher-libraries
