@@ -13,3 +13,4 @@ This document introduces Ruckus, a procedural CAD system in the same family as
 @include-section["whirlwind.scrbl"]
 @include-section["basics.scrbl"]
 @include-section["tools.scrbl"]
+@include-section["internals.scrbl"]
