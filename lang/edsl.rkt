@@ -50,6 +50,7 @@
   rect
   circle
   interpolation-surface
+  interpolation-surface-raw
   
   reflect-distance)
 
@@ -351,6 +352,12 @@
       (canonicalize
         (call-with-edsl-root
           (lambda () form forms ...))))))
+
+(define (interpolation-surface-raw cs)
+  (3d-only 'interpolation-surface)
+
+  (let* ([solution (solve-interpolated-surface-system cs)])
+    (add-child 'interpolation-surface solution)))
 
 
 ; ------------------------------------------------------------------------------
