@@ -10,12 +10,14 @@
 (require "./binary-stl.rkt")
 (require "./marching-tets.rkt")
 (require "./marching-cubes.rkt")
+(require "./descent3.rkt")
 
 (define (run)
   ; Knobs controlled from the command line, with default values:
   (define design-size 1000)    ; size of cubic ROI to consider
   (define design-quantum 1)   ; size of quantum for terminal contour
   (define polygonizer marching-cubes)
+  (define subdivide lipschitz-subdivide)
 
   (command-line
     #:program "ruckus-export-surface"
@@ -40,11 +42,22 @@
       "general, halving the <q> value increases processing time 4x.")
      (set! design-quantum (string->number q))]
 
+    #:help-labels "--- spatial subdivision algorithms ---"
+
+    #:once-any
+    [("-l" "--lipschitz")
+     "Use Lipschitz-guided gradient descent (default)."
+     (set! subdivide lipschitz-subdivide)]
+
+    [("-b" "--brute")
+     "Use brute-force exhaustive subdivision."
+     (set! subdivide exhaustive-subdivide)]
+
     #:help-labels "--- triangulation methods ---"
 
     #:once-any
     [("-c" "--cubes")
-     "Use marching cubes."
+     "Use marching cubes (default)."
      (set! polygonizer marching-cubes)]
     [("-t" "--tets")
      "Use marching tetrahedra."
@@ -57,6 +70,7 @@
                                (surface->stl (load-frep design-path)
                                              design-size
                                              design-quantum
+                                             subdivide
                                              polygonizer))))))
 
 (module+ main (run))

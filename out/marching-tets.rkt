@@ -11,16 +11,15 @@
 (require "../core/math.rkt")
 (require "./marching-foo.rkt")
 
-; Processes a cube with most negative vertex 'corner' and size 'size', both in
-; design units.  Calls 'out-fn' with each triangle discovered.
-(define (marching-tets f corner size out-fn)
-  (let ([gc (make-grid-cell f corner size)])
-    (polygonize-tet gc 0 2 3 7 out-fn)
-    (polygonize-tet gc 0 7 6 2 out-fn)
-    (polygonize-tet gc 0 4 6 7 out-fn)
-    (polygonize-tet gc 0 6 1 2 out-fn)
-    (polygonize-tet gc 0 6 4 1 out-fn)
-    (polygonize-tet gc 5 6 1 4 out-fn)))
+; Processes a cube with vertex locations and field values given by the grid-cell
+; 'gc'.  Calls 'out-fn' with each triangle discovered.
+(define (marching-tets gc out-fn)
+  (polygonize-tet gc 0 2 3 7 out-fn)
+  (polygonize-tet gc 0 7 6 2 out-fn)
+  (polygonize-tet gc 0 4 6 7 out-fn)
+  (polygonize-tet gc 0 6 1 2 out-fn)
+  (polygonize-tet gc 0 6 4 1 out-fn)
+  (polygonize-tet gc 5 6 1 4 out-fn))
 
 ; Finds zero, one, or two triangles that describe the contour of a sampled
 ; field within one tetrahedral division of a sampling cube.  The cube's corners

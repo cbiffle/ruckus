@@ -70,6 +70,10 @@ Ruckus's variant of the Marching Cubes / Tetrahedra algorithms mean that this
 tool takes time proportional to the number of triangles emitted.  Reducing the
 triangulation quantum (below) by half increases processing time by around 4x.
 
+If a design manages to violate the Lipschitz criterion, there may be holes in
+the exported surface mesh.  This is a bug.  You can work around it by disabling
+Lipschitz gradient descent in the exporter (@exec{--brute}).
+
 STL files can be interpreted in a variety of real-world units (such as
 millimeters), depending on the tools used and their configuration.  Ruckus has
 no particular opinion on this; exported STL files are in your design units,
@@ -94,10 +98,15 @@ Command line options (check @exec{--help} for complete list):
         will then be triangulated separately.  As a result, this also controls
         the maximum size of any aliasing artifacts in the output.}
 
-  @item{@exec{--tets} switches from the default Marching Cubes algorithm to
-        Marching Tetrahedra.  The output from Marching Tetrahedra tends to have
-        subjectively worse aliasing artifacts, but it's here in case you need
-        it.}
+  @item{@exec{--cubes} and @exec{--tets} choose the triangulation algorithm:
+        Marching Cubes (default) or Marching Tetrahedra.  The output from
+        Marching Tetrahedra tends to have subjectively worse aliasing
+        artifacts, but it's here in case you need it.}
+
+  @item{@exec{--lipschitz} and @exec{--brute} choose the spatial subdivision
+        algorithm: Lipschitz-gradient descent (default) or brute force.  You
+        might want to switch to brute force if the mesh has holes in it, but
+        be warned that it's exponentially slower.}
 ]
 
 @subsection{ruckus-export-outline}

@@ -13,19 +13,21 @@
 (require "../core/math.rkt")
 (require "./marching-foo.rkt")
 
-; Triangulates a single cubic domain within a signed distance bound function.
+; Triangulates a single cubic domain within an implicit surface.
 ;
-; 'f' is the function, from vec3 to real.
-;
-; 'corner' is a vec3 giving the world coordinates of the most negative corner
-; of the domain to triangulate.
-;
-; 'size' is the dimension, in world units, of the cubic domain.
+; 'gc' is the grid-cell giving the corner locations and field values.
 ;
 ; 'out-fn' will be applied to each triangle found.
-(define (marching-cubes f corner size out-fn)
-  (polygonize (make-grid-cell f corner size) 
-              out-fn))
+(define (marching-cubes gc out-fn)
+  (let* ([ci (cube-index gc)]
+         [et (vector-ref edge-table ci)]
+         [tte (vector-ref tri-table ci)])
+    (unless (zero? et)
+      (let ([verts (make-vertices gc et)])
+        (for ([edges (in-vector tte)])
+          (out-fn (list (vector-ref verts (vector-ref edges 0))
+                        (vector-ref verts (vector-ref edges 2))
+                        (vector-ref verts (vector-ref edges 1)))))))))
 
 ; For each of 256 possible corner occupancy codes, this table records which of
 ; the twelve possible edges are involved in producing triangles.  This is used
@@ -341,18 +343,6 @@
           #(#(0 9 1))
           #(#(0 3 8))
           #()))
-
-; Processes the tables above to triangulate the surface inside grid-cell g.
-(define (polygonize g out-fn)
-  (let* ([ci (cube-index g)]
-         [et (vector-ref edge-table ci)]
-         [tte (vector-ref tri-table ci)])
-    (unless (zero? et)
-      (let ([verts (make-vertices g et)])
-        (for ([edges (in-vector tte)])
-          (out-fn (list (vector-ref verts (vector-ref edges 0))
-                        (vector-ref verts (vector-ref edges 2))
-                        (vector-ref verts (vector-ref edges 1)))))))))
 
 ; Fill in a 12-vector of interpolated vertices, but only do the actual math for
 ; entries with a 1 set in edge-table entry 'et'.  Others are stuffed with
