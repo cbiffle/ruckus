@@ -100,7 +100,7 @@ void main() {
   vec4 complexity = falseColor(float(stepsTaken) / float(stepLimit));
   vec4 distance = falseColor(clamp(d / closeEnough, 0., 1.));
 
-  fragColor = showComplexity ? complexity
-                             : showDistance ? distance : color;
+  fragColor = sqrt(showComplexity ? complexity
+                                  : showDistance ? distance : color);
 }
 
