@@ -14,4 +14,4 @@
   ; relative path.
   (let ([rel-path (find-relative-path (current-directory) path)])
     (dynamic-rerequire rel-path)
-    (dynamic-require rel-path 'design)))
+    (dynamic-require `(submod ,rel-path ruckus-metadata) 'top-level-thunk)))
