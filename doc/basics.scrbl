@@ -499,3 +499,12 @@ These primitives can be employed in any 3D context.
   Makes the child forms @racket[count]-way radially symmetric around the Z
   axis.
 }
+
+
+@section{Reflection}
+
+@defform[(reflect-distance forms ...)]{
+  Compiles child forms (in a 3D context) into a distance field evaluation
+  function.  This can be used to sample the distance bounds of a part of a
+  design and derive other design parameters from it.
+}

@@ -8,6 +8,8 @@
 
 (require "../core/math.rkt")
 (require "../core/model.rkt")
+(require "../core/compiler/canon.rkt")
+(require "../core/compiler/racket.rkt")
 (require "./colors.rkt")
 (require "./evaluator.rkt")
 (require "./interpolation.rkt")
@@ -47,7 +49,9 @@
   half-space
   rect
   circle
-  interpolation-surface)
+  interpolation-surface
+  
+  reflect-distance)
 
 (define (coord? v)
   (let ([target-length (if (current-mode? '2d) 2 3)])
@@ -340,6 +344,13 @@
   (let* ([cs (apply append (map syntax->constraints args))]
          [solution (solve-interpolated-surface-system cs)])
     (add-child 'interpolation-surface solution)))
+
+(define-syntax-rule (reflect-distance form forms ...)
+  (node->distance-function
+    (first
+      (canonicalize
+        (call-with-edsl-root
+          (lambda () form forms ...))))))
 
 
 ; ------------------------------------------------------------------------------
