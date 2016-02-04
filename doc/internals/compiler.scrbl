@@ -349,19 +349,10 @@ that generates the OpenGL Shader Language (GLSL).
 
 @subsection{Racket}
 
+@defmodule[ruckus/core/compiler/racket]
+
 The Racket backend is the simplest backend, and the first one to read if you're
-curious.
-
-The backend, in @racketmodname[ruckus/core/compiler/racket], exports two
-functions:
-
-@itemlist[
-  @item{@racket[node->distance-function] converts a @racket[node] (the AST-level
-        representation) into a Racket signed distance bound function.}
-  @item{@racket[node->discriminator] converts a @racket[node] into a Racket
-        function that, given a point in space, returns the node ID of the
-        nearest surface.}
-]
+curious.  It converts nodes into functions (going through IR internally).
 
 The functions returned in both cases are produced by @racket[eval], not
 interpreted at the IR level.
@@ -374,18 +365,20 @@ corresponding to IR values.  (Value number 12 produces a variable named
 You can view the Racket code corresponding to a design using the
 @exec{ruckus-dump-rkt} tool.
 
+@defproc[(node->distance-function [n node?]) (vec3? . -> . real?)]{
+  Converts @racket[n] into a Racket function that evaluates the design's signed
+  distance bound function.
+}
+
+@defproc[(node->discriminator [n node?]) (vec3? . -> . integer?)]{
+  Converts @racket[n] into a Racket function that finds the node ID of the
+  nearest surface to a given point.
+}
+
 
 @subsection{GLSL}
 
-The GLSL backend, in @racketmodname[ruckus/viz/glsl], exports two functions:
-
-@itemlist[
-  @item{@racket[node->glsl-distance] converts a @racket[node] into the text of a
-        GLSL signed distance bound evaluator function, expressed as a list of
-        strings, one per line of code.}
-  @item{@racket[node->glsl-disc] does the same thing, except the generated
-        function returns the dominating node ID.}
-]
+@defmodule[ruckus/viz/glsl]
 
 The GLSL backend is more complicated than the Racket backend, because GLSL is a
 C-style braces-and-semicolons language with explicit type declarations.  (It's
@@ -393,3 +386,17 @@ still only about 100 lines of code.)
 
 You can view the GLSL code corresponding to a design using the
 @exec{ruckus-dump-glsl} tool.
+
+@defproc[(node->glsl-distance [n node?]) (listof string?)]{
+  Converts @racket[n] into the text of a GLSL function that evaluates the
+  design's signed distance bound function.  The result contains one string per
+  line.
+}
+
+@defproc[(node->glsl-disc [n node?]) (listof string?)]{
+  Converts @racket[n] into the text of a GLSL function that finds the node ID of
+  the nearest surface to a given point.  The result contains one string per
+  line.
+}
+
+
