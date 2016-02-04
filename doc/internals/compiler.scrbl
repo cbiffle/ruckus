@@ -19,13 +19,13 @@ that starts with:
 
 @codeblock{#lang ruckus}
 
-The rewrite rules allow Ruckus EDSL forms defining geometry to be used at the
+The rewrite rules allow Ruckus forms defining geometry to be used at the
 top-level of a Ruckus design language file, while postponing their actual
 evaluation so that it doesn't occur during @racket[require].  This is handy,
 because it's often useful to instantiate an assembly at the top level of a file
 so that it can be viewed or exported --- but when it comes time to reuse
-portions of that file in a new design, we rarely want the new design to grow the
-other file's top-level assembly.
+portions of that file in a new design, we rarely want the new design to grow
+the other file's top-level assembly.
 
 @subsection{Rewrite Example}
 
@@ -112,8 +112,9 @@ or any other language supported by the Racket tools.
 
 @subsection{Using Another Racket Language}
 
-Here's a design written in the core Racket language instead of the Ruckus design
-language.
+Here's a design written in the core Racket language instead of the Ruckus
+design language.  You can work in whichever language you prefer, but you'll
+have to manually perform the rewrite described above.
 
 @codeblock{
   #lang racket
@@ -133,7 +134,7 @@ language.
 }
 
 
-@section{The EDSL Forms}
+@section{Building the AST}
 
 Ruckus designs are Racket code, not data structures.  This means that a
 geometric construct like
@@ -156,36 +157,63 @@ spheres and combinators like union are represented explicitly at this level.
 Because of the behind-the-scenes support for Ruckus forms, you will encounter an
 error if you try to evaluate one in some arbitrary context, like the Racket
 REPL.  Ruckus provides the @racket[call-with-edsl-root] function to evaluate
-some geometry and return the AST:
-
-@interaction[#:eval my-evaluator
-  (require ruckus)
-  (sphere 100)
-  (require ruckus/lang/evaluator)
-  (call-with-edsl-root (lambda () (sphere 100)))
-]
+some geometry and return the AST.  Details below.
 
 You can also view the AST for a given design file using the
 @exec{ruckus-dump-ast} tool.
 
-The AST is built out of a structure called @racket[node] (defined in
-@racketmodname[ruckus/core/model]).  It has the following fields:
+@subsection{The AST Node Structure}
 
-@itemlist[
-  @item{@racket[node-type]: a symbol indicating the type of node, such as
-        @racket['sphere] or @racket['union].}
-  @item{@racket[node-atts]: a list of type-specific attribute values.}
-  @item{@racket[node-children]: a list of child nodes, which may be empty for
-        nodes (like @racket[sphere]) that have no children.}
-  @item{@racket[node-id]: a unique identifier filled in during the rewrite
-        pass (below).}
-  @item{@racket[node-color]: a color assigned by the @racket[color] form,
-        or @racket[#f] for the default.}
-]
+@defmodule[ruckus/core/model]
 
-The AST that results from @racket[call-with-edsl-root] is
-@italic{non-canonical}, making it harder to process.  The next pass takes care
-of that.
+@defstruct[node ([type symbol?]
+                 [atts list?]
+                 [children (listof node?)]
+                 [id (or/c integer? #f)]
+                 [color (or/c (listof real?) #f)])
+                #:transparent]{
+  An n-way tree structure used to represent the Ruckus AST.
+
+  @itemlist[
+    @item{@racket[node-type]: a symbol indicating the type of node, such as
+          @racket['sphere] or @racket['union].}
+    @item{@racket[node-atts]: a list of type-specific attribute values.}
+    @item{@racket[node-children]: a list of child nodes, which may be empty for
+          nodes (like @racket[sphere]) that have no children.}
+    @item{@racket[node-id]: a unique identifier filled in during the rewrite
+          pass (below).}
+    @item{@racket[node-color]: a color assigned by the @racket[color] form,
+          or @racket[#f] for the default.}
+  ]
+}
+
+@subsection{The EDSL Evaluator}
+
+@defmodule[ruckus/lang/evaluator]
+
+@defproc[(call-with-edsl-root [p procedure?]) node?]{
+  Sets up the EDSL stack and geometry environment for a new design, then calls
+  @racket[p] with no arguments.
+
+  Returns the @racket[node] that results from evaluating any Ruckus design
+  language forms inside @racket[p].  If there are no such forms, the result is
+  an empty node.
+
+  @racket[call-with-edsl-root] is mostly useful if you are implementing tools
+  that interact directly with Ruckus designs, or want to experiment with Ruckus
+  design language forms in the REPL:
+
+  @interaction[#:eval my-evaluator
+    (require ruckus)
+    (sphere 100)
+    (require ruckus/lang/evaluator)
+    (call-with-edsl-root (lambda () (sphere 100)))
+  ]
+
+  The result of @racket[call-with-edsl-root] is always of @racket[node-type]
+  @racket['root], and is @italic{non-canonical}.  To fix this, apply
+  @racket[canonicalize].
+}
 
 
 @section{AST Rewriting}
@@ -195,31 +223,56 @@ The AST rewrite pass is responsible for @italic{canonicalizing} the AST and
 
 @subsection{Canonicalization}
 
-Canonicalization is specified in @racketmodname[ruckus/core/compiler/canon].  In
-general, the process involves:
+@defmodule[ruckus/core/compiler/canon]
 
-@itemlist[
-  @item{Converting nodes with many children into binary trees.}
-  @item{Flattening combinators with a single child node.}
-  @item{Combining nested transforms that can be combined (e.g. nested
-        @racket[at] forms).}
-  @item{Identifying and removing do-nothing transforms (e.g. translation by
-        zero).}
-]
+@defproc[(canonicalize [n node?]) (listof node?)]{
+  Canonicalizes a node.  In general, the process involves:
 
-You can view the result of canonicalization on a design using
-@exec{ruckus-dump-ast -c}.
+  @itemlist[
+    @item{Rewriting @racket['root] nodes into @racket['union].}
+    @item{Converting nodes with many children into binary trees.}
+    @item{Flattening combinators with a single child node.}
+    @item{Combining nested transforms that can be combined (e.g. nested
+          @racket[at] forms).}
+    @item{Identifying and removing do-nothing transforms (e.g. translation by
+          zero).}
+  ]
+
+  The result of @racket[canonicalize] may be:
+
+  @itemlist[
+    @item{Zero nodes, if the node contents were completely eliminated by
+          flattening and combining,}
+    @item{One node, or}
+    @item{Many nodes, if @racket[n] represented a do-nothing transform with
+          several children.}
+  ]
+
+  If @racket[n] is known to be a @racket['root] node, of the form returned from
+  @racket[call-with-edsl-root], then the "many nodes" case won't happen.
+
+  You can view the result of canonicalization on a design using
+  @exec{ruckus-dump-ast -c}.
+}
 
 @subsection{Enumeration}
 
-Enumeration is specified in @racketmodname[ruckus/core/compiler/enumerate].  It
-establishes the post-condition that every node in the AST either has children or
-a unique integer @racket[node-id].  This is used in later phases that need to
-discriminate between different parts of a surface, e.g. to change colors or
-material properties.
+@defmodule[ruckus/core/compiler/enumerate]
+
+@defproc[(enumerate-nodes [next-id integer?] [n node?])
+         (values integer? node?)]{
+  Recursively enumerates nodes in @racket[n], returning a @racket[node] of the
+  same shape, but wherein every node has either children or a unique
+  @racket[node-id].
+
+  This is used in later phases that need to discriminate between different parts
+  of a surface, e.g. to change colors or material properties.
+}
 
 
 @section{Lowering to Ruckus IR}
+
+@defmodule[ruckus/core/compiler/lower]
 
 After the AST is canonicalized and enumerated, we @italic{lower} it to a
 different form: the Ruckus Intermediate Representation, or IR.  This breaks down
@@ -262,6 +315,11 @@ means.
       (assignu 8 (choose (> (r 2) (r 6)) (r 3) (r 5))))
   ; Signed distance bound in value 7
   ; Dominating node ID in value 8
+}
+
+@defproc[(generate-statements [n node?]) list?]{
+  Generates Ruckus IR assignments implementing @racket[n].  Internally
+  canonicalizes and enumerates @racket[n], so you don't need to.
 }
 
 @subsection{Assignments}
@@ -324,19 +382,23 @@ That's essentially equivalent to the Racket code
 
 @subsection{Value Pruning}
 
-Ruckus uses a very simple version of dead code elimination to simplify IR
-programs.  In general, Ruckus IR programs don't include unnecessary code --- but
-IR programs @italic{do} compute two different things simultaneously, the signed
-distance bound field and the dominating node ID.
+@defproc[(prune-statements [statements list?] [result integer?]) list?]{
+  Given a list of @racket[statements], of the sort produced by
+  @racket[generate-statements], returns a similar list containing only those
+  assignments that contribute to the production of the numbered value
+  @racket[result].
 
-Value pruning (@racket[prune-statements] in
-@racketmodname[ruckus/core/compiler/lower]) takes the value number of a desired
-result (either distance or node ID) and eliminates all assignments that do not
-contribute to that result.
+  Because the default IR programs compute two different things simultaneously
+  --- the signed distance bound field and the dominating node ID --- backends
+  use @racket[prune-statements] to optimize if only one or the other is
+  required.
 
-The target backends (below) use this to compile specialized versions of the IR
-programs.
+  Note that, in general, computing the dominating node ID is more expensive than
+  computing the distance field bound, even after pruning.
 
+  You can see the result of pruning on a design by passing the @exec{-p} switch
+  to the @exec{ruckus-dump-ir} tool.
+}
 
 @section{Target Backends}
 
@@ -347,7 +409,7 @@ executable code.
 There are currently two backends implemented, one that generates Racket, and one
 that generates the OpenGL Shader Language (GLSL).
 
-@subsection{Racket}
+@subsection{The Racket Backend}
 
 @defmodule[ruckus/core/compiler/racket]
 
@@ -376,7 +438,7 @@ You can view the Racket code corresponding to a design using the
 }
 
 
-@subsection{GLSL}
+@subsection{The GLSL Backend}
 
 @defmodule[ruckus/viz/glsl]
 
