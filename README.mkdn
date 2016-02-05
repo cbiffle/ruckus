@@ -31,3 +31,8 @@ taste, leading to silent failures if you forget to initialize a variable or omit
 a function parameter.
 
 So I built something different that better-suited my taste.
+
+**Tell me more.**
+
+I suggest [reading the
+documentation](http://pkg-build.racket-lang.org/doc/ruckus/index.html).
