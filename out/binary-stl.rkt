@@ -28,22 +28,8 @@
     (define triangle-count 0)
 
     (define (emit tri)
-      ; Compute the cross product so we can find the face normal.
-      (let* ([ba (vec3-sub (second tri) (first tri))]
-             [ca (vec3-sub (third tri) (first tri))]
-             [cross (vec3-cross ba ca)])
-        ; Omit degenerate triangles (zero-length cross).
-        (unless (zero? (vec3-length cross))
-          (set! triangle-count (add1 triangle-count))
-          ; Binary STL format consists of:
-          ; The normal vector
-          (stl-write-vector (vec3-normalize cross))
-          ; Three corner vectors
-          (for ([p (in-list tri)])
-            (stl-write-vector p))
-          ; A two-byte field that nobody can agree on.
-          (write-byte 0)
-          (write-byte 0))))
+      (when (write-stl-tri tri)
+        (set! triangle-count (add1 triangle-count))))
 
     (subdivide f size q
                (lambda (gc) (polygonize gc emit)))
@@ -53,8 +39,33 @@
     (write-bytes (integer->integer-bytes triangle-count 4 #f ))
     (void)))
 
-(define (stl-write-vector v)
-  (write-bytes (real->floating-point-bytes (vec3-x v) 4 #f))
-  (write-bytes (real->floating-point-bytes (vec3-y v) 4 #f))
-  (write-bytes (real->floating-point-bytes (vec3-z v) 4 #f))
-  (void))
+; Writes the triangle 'tri' (a 3-list of vec3) to current-output-port as a
+; binary STL triangle record, iff it is not degenerate.
+;
+; If the record is written, the result is #t.  If not, it is #f.
+(define (write-stl-tri tri)
+  ; Compute the cross product so we can find the face normal.
+  (let* ([ba (vec3-sub (second tri) (first tri))]
+         [ca (vec3-sub (third tri) (first tri))]
+         [cross (vec3-cross ba ca)])
+    ; Omit degenerate triangles (zero-length cross).
+    (if (zero? (vec3-length cross))
+      #f
+      ; Generate and write a binary-format record.  Binary format records
+      ; consist of:
+      ; - The normal vector (12 bytes)
+      ; - The triangle vertices (3 * 12 bytes)
+      ; - Two trailing bytes upon which nobody agrees (2 bytes)
+      (let ([buf (make-bytes (+ 12 (* 3 12) 2))])
+        (vector->stl-bytes (vec3-normalize cross) buf 0)
+        ; Three corner vectors
+        (for ([p (in-list tri)]
+              [off (in-range 12 48 12)])
+          (vector->stl-bytes p buf off))
+        (write-bytes buf)
+        #t))))
+
+(define (vector->stl-bytes v buf start)
+  (real->floating-point-bytes (vec3-x v) 4 #f buf (+ start 0))
+  (real->floating-point-bytes (vec3-y v) 4 #f buf (+ start 4))
+  (real->floating-point-bytes (vec3-z v) 4 #f buf (+ start 8)))
