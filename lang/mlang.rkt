@@ -83,13 +83,13 @@
                    [parts$ (datum->syntax stx null)])
        #`(#%module-begin
           (require ruckus$)
+          (module* ruckus-metadata #f
+            (provide top-level-thunk)
+            (define top-level-thunk design$))
 
           (convert-body design$ parts$ expr ...)
 
-          (module* ruckus-metadata #f
-            (provide top-level-thunk)
-            (define top-level-thunk design$)
-            )))]))
+            ))]))
 
 ; Recursive macro helper for rewriting Ruckus modules into Racket modules.
 ;
