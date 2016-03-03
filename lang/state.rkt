@@ -42,9 +42,24 @@
                                [children (cons c (node-children parent))])])
     (*stack* (cons parent2 (rest s)))))
 
+(define (list->alist xs)
+  (cond
+    [(empty? xs) xs]
+    [(> (length xs) 1)
+     (cons
+       (cons (first xs)
+             (second xs))
+       (list->alist (rest (rest xs))))]
+    [else (raise-argument-error 'list->alist "even number of items" xs)]))
+
 (define (begin-child type . atts)
-  (*stack* (cons (node type atts '() #f (*color*))
-                 (*stack*))))
+  ; Rewrite the attributes to take color from the current state.
+  (let ([n (node type
+                 (if (*color*)
+                   (dict-set (list->alist atts) 'color (*color*))
+                   (list->alist atts))
+                 '())])
+    (*stack* (cons n (*stack*)))))
 
 (define (end-child)
   (let* ([s (*stack*)]

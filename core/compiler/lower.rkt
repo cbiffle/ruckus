@@ -58,44 +58,52 @@
 ; Primitive generators
 ;
 
-(define ((leaf-generator gen) node query)
+(define (collect-atts node keys)
+  (for/list ([kv keys])
+    (if (list? kv)
+      (node-att-ref node (first kv) (second kv))
+      (node-att-ref node kv))))
+
+(define ((leaf-generator keys gen) node query)
   (let-values ([(d i) (fresh-value-pair)])
-    (code `(assignf ,d ,(apply gen `(r ,query) (node-atts node))))
+    (code `(assignf ,d
+                    ,(apply gen `(r ,query)
+                            (collect-atts node keys) )))
     (code `(assignu ,i (cu ,(node-id node))))
     (values d i)))
 
 (define generate-sphere
-  (leaf-generator
+  (leaf-generator '(radius)
     (lambda (query radius)
       `(sphere (cf ,radius) ,query))))
 
 (define generate-capsule
-  (leaf-generator
+  (leaf-generator '(height radius)
     (lambda (query height radius)
       `(capsule (cf ,(height . / . 2)) (cf ,radius) ,query))))
 
 (define generate-half
-  (leaf-generator
+  (leaf-generator '(normal distance)
     (lambda (query normal dist)
       `(sub 1 (dot 3 ,query (c3f ,normal)) (cf ,dist)))))
 
 (define generate-box
-  (leaf-generator
+  (leaf-generator '(size)
     (lambda (query size)
       `(box (c3f ,(vec3-div size 2)) ,query))))
 
 (define generate-rect
-  (leaf-generator
+  (leaf-generator '(width height)
     (lambda (query w h)
       `(rect (cf ,(w . / . 2)) (cf ,(h . / . 2)) ,query))))
 
 (define generate-circle
-  (leaf-generator
+  (leaf-generator '(radius)
     (lambda (query radius)
       `(circle (cf ,radius) ,query))))
 
 (define generate-interpolation-surface
-  (leaf-generator
+  (leaf-generator '(solution)
     (lambda (query solution)
       (for/fold ([expr #f])
                 ([c (in-list solution)]
@@ -120,7 +128,7 @@
 ; Binary combinators
 ;
 
-(define ((binary-combinator gen-d gen-i) node query)
+(define ((binary-combinator keys gen-d gen-i) node query)
   (unless (= 2 (length (node-children node)))
     (error "non-canonical node passed to generate:" (node-type node)))
 
@@ -129,25 +137,27 @@
                 [(d2 i2) (generate (second children) query)]
                 [(d12 i12) (fresh-value-pair)])
     (code `(assignf ,d12
-                    ,(apply gen-d `(r ,d1) `(r ,d2) (node-atts node))))
+                    ,(apply gen-d `(r ,d1) `(r ,d2)
+                            (collect-atts node keys))))
     (code `(assignu ,i12 (choose
-                           ,(apply gen-i `(r ,d1) `(r ,d2) (node-atts node))
+                           ,(apply gen-i `(r ,d1) `(r ,d2)
+                                   (collect-atts node keys))
                            (r ,i1)
                            (r ,i2))))
     (values d12 i12)))
 
 (define generate-union
-  (binary-combinator
+  (binary-combinator '()
     (lambda (x y) `(min ,x ,y))
     (lambda (x y) `(,x . < . ,y))))
 
 (define generate-smooth-union
-  (binary-combinator
+  (binary-combinator '(blend-radius)
     (lambda (x y smooth) `(smin (cf ,smooth) ,x ,y))
     (lambda (x y smooth) `(,x . < . ,y))))
 
 (define generate-intersection
-  (binary-combinator
+  (binary-combinator '()
     (lambda (x y) `(max ,x ,y))
     (lambda (x y) `(,x . > . ,y))))
 
@@ -155,43 +165,45 @@
 ; Unary post-transforms
 ;
 
-(define ((unary-post-combinator gen) node query)
+(define ((unary-post-combinator keys gen) node query)
   (unless (= 1 (length (node-children node)))
     (error "non-canonical node passed to generate:" (node-type node)))
 
   (let*-values ([(children) (node-children node)]
                 [(d i) (generate (first children) query)]
                 [(new-d) (fresh-value)])
-    (code `(assignf ,new-d ,(apply gen `(r ,d) (node-atts node))))
+    (code `(assignf ,new-d ,(apply gen `(r ,d)
+                                   (collect-atts node keys))))
     (values new-d i)))
 
 (define generate-inverse
-  (unary-post-combinator (lambda (d) `(sub 1 (cf 0) ,d))))
+  (unary-post-combinator '() (lambda (d) `(sub 1 (cf 0) ,d))))
 
 (define generate-iso
-  (unary-post-combinator (lambda (d shift) `(sub 1 ,d (cf ,shift)))))
+  (unary-post-combinator '(depth) (lambda (d shift) `(sub 1 ,d (cf ,shift)))))
 
 
 ;
 ; Unary pre-transforms
 ;
 
-(define ((unary-pre-combinator gen) node query)
+(define ((unary-pre-combinator keys gen) node query)
   (unless (= 1 (length (node-children node)))
     (error "non-canonical node passed to generate:" (node-type node)))
 
   (let ([tq (fresh-value)])
-    (code `(assign3f ,tq ,(apply gen `(r ,query) (node-atts node))))
+    (code `(assign3f ,tq ,(apply gen `(r ,query)
+                                 (collect-atts node keys))))
     (generate (first (node-children node)) tq)))
 
 (define generate-translate
-  (unary-pre-combinator (lambda (q v) `(sub 3 ,q (c3f ,v)))))
+  (unary-pre-combinator '(offset) (lambda (q v) `(sub 3 ,q (c3f ,v)))))
 
 (define generate-rotate
-  (unary-pre-combinator (lambda (q r) `(qrot (c4f ,r) ,q))))
+  (unary-pre-combinator '(quat) (lambda (q r) `(qrot (c4f ,r) ,q))))
 
 (define generate-mirror
-  (unary-pre-combinator
+  (unary-pre-combinator '(axis)
     (lambda (q axis)
       (case axis
         [(x) `(vec3 (abs (proj 3 ,q x))
@@ -209,35 +221,41 @@
 ; More complicated, particularly non-isometric, transforms
 ;
 
-(define ((unary-bracket-combinator pre-gen post-gen) node query)
+(define ((unary-bracket-combinator pre-keys pre-gen post-keys post-gen)
+         node query)
   (unless (= 1 (length (node-children node)))
     (error "non-canonical node passed to generate:" (node-type node)))
 
   (let* ([tq (fresh-value)]
-         [atts (node-atts node)]
          [child (first (node-children node))]
          [rq `(r ,query)])
-    (code `(assign3f ,tq ,(apply pre-gen rq atts)))
+    (code `(assign3f ,tq ,(apply pre-gen rq (collect-atts node pre-keys))))
     (let-values ([(d i) (generate child tq)]
                  [(d-corrected) (fresh-value)])
-      (code `(assignf ,d-corrected ,(apply post-gen rq `(r ,d) atts)))
+      (code `(assignf ,d-corrected ,(apply post-gen
+                                           rq `(r ,d)
+                                           (collect-atts node post-keys))))
       (values d-corrected i))))
 
 (define generate-scale
   (unary-bracket-combinator
+    '(factors)
     (lambda (q scale)
       (let ([scale-inv (vec3-div 1 scale)])
         `(mul 3 ,q (c3f ,scale-inv))))
+    '(factors)
     (lambda (q d scale)
       (let ([correction (min (vec3-x scale) (vec3-y scale) (vec3-z scale))])
         `(mul 1 ,d (cf ,correction))))))
 
 (define generate-extrude
   (unary-bracket-combinator
-    (lambda (q th)
+    '()
+    (lambda (q)
       `(vec3 (proj 3 ,q x)
              (proj 3 ,q y)
              (cf 0)))
+    '(depth)
     (lambda (q d th)
       `(max ,d
             (sub 1 (abs (proj 3 ,q z))
@@ -251,8 +269,8 @@
     (error "non-canonical repeat passed to generate"))
 
   (let ([children (node-children node)]
-        [axis (first (node-atts node))]
-        [spacing (list 'cf (second (node-atts node)))]
+        [axis (node-att-ref node 'axis)]
+        [spacing (list 'cf (node-att-ref node 'period))]
 
         ; pq will hold the value number for the periodic query point.
         [pq (fresh-value)]
@@ -303,7 +321,7 @@
     (error "non-canonical radial-repeat passed to generate"))
 
   (let* ([children (node-children node)]
-         [freq (first (node-atts node))]
+         [freq (node-att-ref node 'freq)]
          [angle ((2 . * . pi) . / . freq)]
          ; pq will hold the value number for the periodic query point.
          [pq (fresh-value)]

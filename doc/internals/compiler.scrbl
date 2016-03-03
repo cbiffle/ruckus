@@ -167,17 +167,17 @@ You can also view the AST for a given design file using the
 @defmodule[ruckus/core/model]
 
 @defstruct[node ([type symbol?]
-                 [atts list?]
-                 [children (listof node?)]
-                 [id (or/c integer? #f)]
-                 [color (or/c (listof real?) #f)])
+                 [atts dict?]
+                 [children (listof node?)])
                 #:transparent]{
   An n-way tree structure used to represent the Ruckus AST.
 
   @itemlist[
     @item{@racket[node-type]: a symbol indicating the type of node, such as
           @racket['sphere] or @racket['union].}
-    @item{@racket[node-atts]: a list of type-specific attribute values.}
+    @item{@racket[node-atts]: a collection of attributes for the node, keyed by
+          symbol.  Currently this is always an association list, but anything
+          conforming to the @racket[dict] protocol will work.}
     @item{@racket[node-children]: a list of child nodes, which may be empty for
           nodes (like @racket[sphere]) that have no children.}
     @item{@racket[node-id]: a unique identifier filled in during the rewrite

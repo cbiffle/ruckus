@@ -20,8 +20,7 @@
       [(sphere half box interpolation-surface capsule rect circle)
        (values
          (+ 1 next-id)
-         (struct-copy node n
-                      [id next-id]))]
+         (node-set-id n next-id))]
       [else (values next-id n)])))
 
 

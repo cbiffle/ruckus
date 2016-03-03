@@ -56,9 +56,7 @@
                                            (canonicalize
                                              (node type
                                                    (node-atts n)
-                                                   (rest children)
-                                                   #f
-                                                   #f)))]))])))
+                                                   (rest children))))]))])))
 
 (define canon-union        (binary-canon 'union))
 (define canon-smooth-union (binary-canon 'smooth-union))
@@ -69,24 +67,18 @@
   (define (make-inverse n)
     (node 'inverse
           '()
-          (list n)
-          #f
-          #f))
+          (list n)))
 
   (let ([children (node-children n)])
     (canonicalize
       (node 'intersection
             '()
-            (apply list (first children) (map make-inverse (rest children)))
-            #f
-            #f))))
+            (apply list (first children) (map make-inverse (rest children)))))))
 
 (define (wrap-canon-union children)
   (canon-union (node 'union
                      '()
-                     children
-                     #f
-                     #f)))
+                     children)))
 
 (define ((unary-canon merge) n)
   (let ([children (node-children n)])
@@ -96,15 +88,16 @@
       [else (list (struct-copy node n
                                [children (wrap-canon-union children)]))])))
 
-(define (unary-canon+ type combine-atts no-op?)
+(define (unary-canon+ type key combine-atts no-op?)
   (unary-canon
     (lambda (n child)
       (cond
         [(eq? type (node-type child))
          (canonicalize
-           (struct-copy node child [atts (combine-atts (node-atts n)
-                                                       (node-atts child))]))]
-        [(apply no-op? (node-atts n))
+           (node-att-set child key
+                         (combine-atts (node-att-ref n key)
+                                       (node-att-ref child key))))]
+        [(no-op? (node-att-ref n key))
          (list child)]
         [else
           (list n)]))))
@@ -129,7 +122,8 @@
 ; Useless translates (translations by zero) are eliminated.
 (define canon-translate (unary-canon+
                           'translate
-                          (lambda (a b) (list (vec3-add (first a) (first b))))
+                          'offset
+                          vec3-add
                           (lambda (v) (equal? (vec3 0 0 0) v))))
 
 ; A canonical scale has a single child.  Scalings of more than one child are
@@ -140,7 +134,8 @@
 ; Useless scalings (scalings by 1 on all axes) are eliminated.
 (define canon-scale (unary-canon+
                       'scale
-                      (lambda (a b) (list (map * (first a) (first b))))
+                      'factors
+                      (lambda (f1 f2) (map * f1 f2))
                       (lambda (v) (equal? '(1 1 1) v))))
 
 ; A canonical isolevel shift has a single child.  Isolevel shifts of more than
@@ -151,7 +146,8 @@
 ; Useless shifts (shifts by zero) are eliminated.
 (define canon-iso (unary-canon+
                     'iso
-                    (lambda (a b) (map + a b))
+                    'depth
+                    +
                     (lambda (v) (zero? v))))
 
 ; A canonical extrude has a single child.  Extrusions of more than one
@@ -189,5 +185,6 @@
 ; eliminated.
 (define canon-rotate (unary-canon+
                        'rotate
-                       (lambda (a b) (list (quat-mul (first a) (first b))))
+                       'quat
+                       quat-mul
                        (lambda (r) (equal? (quat-identity-rotation) r))))

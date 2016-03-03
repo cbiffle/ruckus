@@ -82,7 +82,8 @@
   (call-as-union (lambda () b bs ...)))
 
 (define (call-as-smooth-union sm body)
-  (begin-child 'smooth-union sm)
+  (begin-child 'smooth-union
+               'blend-radius sm)
   (body)
   (end-child))
 
@@ -123,7 +124,8 @@
        (two-coordinates called-as v)
        (vec3 x y 0)]))   ; TODO: need vec2 type!
 
-  (begin-child 'translate (parse-vector v))
+  (begin-child 'translate
+               'offset (parse-vector v))
   (body)
   (end-child))
 
@@ -153,7 +155,8 @@
        (two-coordinates 'scale v)
        (vec3 x y 0)]))  ; TODO: vec2
 
-  (begin-child 'scale (parse-scale v))
+  (begin-child 'scale
+               'factors (parse-scale v))
   (body)
   (end-child))
 
@@ -164,7 +167,8 @@
   (call-with-scale v (lambda () b bs ...)))
 
 (define (call-with-rotation q body)
-  (begin-child 'rotate q)
+  (begin-child 'rotate
+               'quat q)
   (body)
   (end-child))
 
@@ -203,7 +207,8 @@
 
 (define (call-with-extrusion depth body)
   (3d-only 'extrude)
-  (begin-child 'extrude depth)
+  (begin-child 'extrude
+               'depth depth)
   (call-with-mode '2d body)
   (end-child))
 
@@ -220,7 +225,8 @@
   (call-with-slicing (lambda () b bs ...)))
 
 (define (call-with-iso depth body)
-  (begin-child 'iso depth)
+  (begin-child 'iso
+               'depth depth)
   (body)
   (end-child))
 
@@ -228,7 +234,8 @@
   (call-with-iso depth (lambda () b bs ...)))
 
 (define (call-with-mirror kind body)
-  (begin-child 'mirror kind)
+  (begin-child 'mirror
+               'axis kind)
   (body)
   (end-child))
 
@@ -245,7 +252,9 @@
     (call-with-mirror 'z (lambda () b bs ...))))
 
 (define (call-with-repeat kind period body)
-  (begin-child 'repeat kind period)
+  (begin-child 'repeat
+               'axis kind
+               'period period)
   (body)
   (end-child))
 
@@ -253,7 +262,8 @@
   (call-with-repeat 'x period (lambda () b bs ...)))
 
 (define (call-with-radial-repeat freq body)
-  (begin-child 'radial-repeat freq)
+  (begin-child 'radial-repeat
+               'freq freq)
   (body)
   (end-child))
 
@@ -270,25 +280,30 @@
   (syntax-rules ()
     [(sphere r) (begin
                   (3d-only 'sphere)
-                  (add-child 'sphere r))]
+                  (add-child 'sphere 'radius r))]
     [(sphere #:radius r) (begin
                            (3d-only 'sphere)
-                           (add-child 'sphere r))]
+                           (add-child 'sphere 'radius r))]
     [(sphere #:diameter d) (begin
                              (3d-only 'sphere)
-                             (add-child 'sphere (d . / . 2)))]))
+                             (add-child 'sphere 'radius (d . / . 2)))]))
 
 (define (half-space p d)
   (3d-only 'half-space)
-  (add-child 'half p d))
+  (add-child 'half
+             'normal p
+             'distance d))
 
 (define (rects sx sy sz)
   (3d-only 'rects)
-  (add-child 'box (vec3 sx sy sz)))
+  (add-child 'box
+             'size (vec3 sx sy sz)))
 
 (define (capsule height radius)
   (3d-only 'capsule)
-  (add-child 'capsule height radius))
+  (add-child 'capsule
+             'height height
+             'radius radius))
 
 (define (cube s)
   (3d-only 'cube)  ; Preempt the rects message
@@ -296,19 +311,24 @@
 
 (define (rect sx sy)
   (2d-only 'rect)
-  (add-child 'rect sx sy))
+  (add-child 'rect
+             'width sx
+             'height sy))
 
 (define-syntax circle
   (syntax-rules ()
     [(circle r) (begin
                   (2d-only 'circle)
-                  (add-child 'circle r))]
+                  (add-child 'circle
+                             'radius r))]
     [(circle #:radius r) (begin
                            (2d-only 'circle)
-                           (add-child 'circle r))]
+                           (add-child 'circle
+                                      'radius r))]
     [(circle #:diameter d) (begin
                              (2d-only 'circle)
-                             (add-child 'circle d))]))
+                             (add-child 'circle
+                                        'radius (d . / . 2)))]))
 
 (define (interpolation-surface args)
   (3d-only 'interpolation-surface)
@@ -344,7 +364,8 @@
 
   (let* ([cs (apply append (map syntax->constraints args))]
          [solution (solve-interpolated-surface-system cs)])
-    (add-child 'interpolation-surface solution)))
+    (add-child 'interpolation-surface
+               'solution solution)))
 
 (define-syntax-rule (reflect-distance form forms ...)
   (node->distance-function
@@ -357,7 +378,8 @@
   (3d-only 'interpolation-surface)
 
   (let* ([solution (solve-interpolated-surface-system cs)])
-    (add-child 'interpolation-surface solution)))
+    (add-child 'interpolation-surface
+               'solution solution)))
 
 
 ; ------------------------------------------------------------------------------
